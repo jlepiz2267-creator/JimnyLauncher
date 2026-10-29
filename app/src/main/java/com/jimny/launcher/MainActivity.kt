@@ -82,7 +82,7 @@ class MainActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(22), dp(12), dp(22), dp(14))
-            background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(Color.rgb(52, 26, 13), background))
+            background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(Color.rgb(52, 26, 13), this@MainActivity.background))
         }
 
         val header = LinearLayout(this).apply {
@@ -156,7 +156,7 @@ class MainActivity : Activity() {
         val welcome = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setBackgroundColor(background)
+            setBackgroundColor(this@MainActivity.background)
             addView(text("◆  SUZUKI JIMNY  ◆", 16f, red, true).apply {
                 gravity = Gravity.CENTER
             })
