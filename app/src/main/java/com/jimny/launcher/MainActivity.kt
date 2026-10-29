@@ -162,7 +162,7 @@ class MainActivity : Activity() {
         footer.addView(text("      •      ", 12f, red))
         footer.addView(text("♫  MÚSICA", 12f, muted))
         footer.addView(text("      •      ", 12f, red))
-        footer.addView(text("JIMNY LAUNCHER V0.4", 12f, muted))
+        footer.addView(text("JIMNY LAUNCHER V0.5", 12f, muted))
         root.addView(footer, LinearLayout.LayoutParams(-1, dp(36)))
 
         val container = FrameLayout(this)
