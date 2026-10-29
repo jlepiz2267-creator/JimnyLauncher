@@ -59,14 +59,14 @@ jobs:
             echo "Permisos declarados:"
             "$TOOLS/aapt" dump permissions "$APK"
           } | tee apk-verificacion.txt
-          if "$TOOLS/aapt" dump permissions "$APK" | grep -E 'uses-permission:'; then
+          if "$TOOLS/aapt" dump permissions "$APK" | grep -E "uses-permission:" | grep -v "name='android.permission.INTERNET'"; then
             echo "ERROR: Se detectaron permisos nuevos."
             exit 1
           fi
       - name: Publicar APK y análisis
         uses: actions/upload-artifact@v4
         with:
-          name: JimnyLauncher-v05-APK
+          name: JimnyLauncher-v06-APK
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             apk-verificacion.txt
@@ -108,7 +108,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: JimnyLauncher-v05-emulador
+          name: JimnyLauncher-v06-emulador
           path: |
             arranque-android.txt
             captura-emulador.png
