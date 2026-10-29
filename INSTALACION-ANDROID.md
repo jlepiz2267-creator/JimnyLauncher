@@ -1,31 +1,26 @@
-# Instalación segura de JimnyLauncher v0.7 para Android
+# JimnyLauncher v0.8 — recuperar la interfaz original
 
-## Por qué se creó esta variante
+La versión v0.7 redujo involuntariamente la interfaz a un diseño provisional y omitió la imagen del Jimny y la pantalla de bienvenida. **v0.8 recupera el panel visual v0.5** y conserva la corrección de seguridad v0.7.
 
-La versión 0.6 incluía un `NotificationListenerService` para obtener controles de música de otras aplicaciones. Play Protect identificó la solicitud de **acceso a notificaciones** como permiso sensible y bloqueó la instalación desde el administrador de archivos del teléfono. **No implica automáticamente que haya código malicioso**, pero sí que debemos minimizar los permisos.
+## Qué incluye
 
-La v0.7 retira el servicio y su declaración del manifiesto, así como las referencias del reproductor a ese acceso. **Único permiso solicitado:** `INTERNET`, para mostrar el mapa online de OpenStreetMap. No solicita acceso a notificaciones, SMS, accesibilidad, cámara, micrófono o ubicación GPS.
+- Bienvenida `BIENVENIDO, JUAN` al abrir.
+- Tablero negro/naranja con el Jimny blanco, tarjeta de reloj, accesos a Google Maps, Waze y YouTube Music.
+- Nuevo botón `VER MAPA` para abrir el mapa integrado opcional y regresar al panel desde la misma app. El mapa carga desde la red; sin conexión puede aparecer vacío.
+- Permisos limitados a `INTERNET`. No se declara ningún servicio de acceso a notificaciones.
+- No puede incrustar el reproductor real de YouTube Music sin integración adicional; los botones abren aplicaciones del teléfono y no la interfaz de Android Auto.
 
-## Qué funciona y qué se elimina
+## Descargar e instalar en el teléfono
 
-- Sigue: interfaz negra/naranja, reloj, mapa web en la pantalla, botones para abrir Maps, Waze y YouTube Music desde el teléfono.
-- Eliminado: leer qué canción está activa y cambiar de canción dentro de JimnyLauncher (esas funciones necesitaban el permiso sensible).
-- No es firmware Sony ni aplicación certificada para Android Auto.
+1. En GitHub, abrir **Actions** y elegir la ejecución más reciente de la versión v0.8 que tenga **todos los trabajos en verde**.
+2. En la sección **Artifacts**, descargar `JimnyLauncher-v08-APK`; extraer el archivo `app-debug.apk`.
+3. Revisar su informe de verificación de permisos y firma.
+4. Solo si Play Protect permite instalar normalmente, completar la instalación.
+5. Si aparece `La aplicación no se instaló` por una firma distinta a la de v0.7, desinstalar **solo Jimny Launcher** y volver a instalar v0.8. No desinstalar Fermata, Maps ni Android Auto.
+6. Probar con el carro estacionado; primero ver el panel de inicio, luego el botón `VER MAPA`, y por último los accesos.
 
-## Instalación en el teléfono
+**No desactivar Play Protect ni continuar si bloquea la instalación.** Una compilación correcta en GitHub no garantiza aprobación por Play Protect ni proyección en Sony XAV-AX3000.
 
-1. En GitHub, abrir Actions y elegir la última ejecución **exitosa** de `Compilar y verificar JimnyLauncher`, con la revisión de v0.7.
-2. Descargar el artefacto `JimnyLauncher-v07-APK`; descomprimir y extraer `app-debug.apk`.
-3. Revisar el reporte `apk-verificacion.txt`. Verificar que Play Protect **no bloquee** la instalación; si muestra otro bloqueo, **detenerse y solicitar revisión**.
-4. Instalar con las medidas normales de seguridad de Android. Probar primero en el teléfono, no en la Sony.
-5. Si aparece un conflicto de firma con una versión previa, no forzar una actualización; el APK de pruebas puede estar firmado con otra clave y requerir desinstalar la versión anterior.
+## Alcance de las pruebas
 
-**No desactivar Play Protect ni omitir una advertencia de seguridad.** La eliminación del permiso sensible reduce el riesgo de bloqueo, pero no garantiza la aprobación de Google Play Protect en todos los dispositivos.
-
-## Pruebas de GitHub Actions
-
-El flujo verifica el manifiesto y el APK para rechazar accesos sensibles, prueba la interfaz web, compila el APK, comprueba la firma y lo instala y ejecuta en un emulador Android 15. Estas pruebas no demuestran compatibilidad con el teléfono Samsung concreto o con Android Auto. No es una certificación de seguridad.
-
-Para una distribución permanente, se recomienda configurar firma de lanzamiento propia y un proceso de publicación confiable en vez de depender de una firma de depuración que puede cambiar en cada ejecución.
-
-Fuentes: https://developers.google.com/android/play-protect/warning-dev-guidance?hl=es-419 y https://developer.android.com/reference/android/service/notification/NotificationListenerService
+El CI ejecuta pruebas estáticas de regresión visual, compila y analiza el código, audita permisos y firma, instala la app y genera una captura en emulador Android 15. No es una prueba física en Samsung ni de Android Auto. Este proyecto no modifica el firmware de Sony.
