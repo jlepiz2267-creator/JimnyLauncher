@@ -102,7 +102,7 @@ class MainActivity : Activity() {
         }
 
         val navigation = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        navigation.addView(text("HOLA, JAIME", 23f, Color.WHITE, true))
+        navigation.addView(text("HOLA, JUAN", 23f, Color.WHITE, true))
         navigation.addView(text("Tu Suzuki Jimny JB74", 12f, muted))
         navigation.addView(text("NAVEGACIÓN", 12f, red, true))
         navigation.addView(appCard("↗", "Google Maps", "Abrir navegación", "com.google.android.apps.maps", panel),
@@ -160,7 +160,7 @@ class MainActivity : Activity() {
             addView(text("◆  SUZUKI JIMNY  ◆", 16f, red, true).apply {
                 gravity = Gravity.CENTER
             })
-            addView(text("BIENVENIDO, JAIME", 34f, Color.WHITE, true).apply {
+            addView(text("BIENVENIDO, JUAN", 34f, Color.WHITE, true).apply {
                 gravity = Gravity.CENTER
                 setPadding(dp(12), dp(20), dp(12), dp(12))
             })
