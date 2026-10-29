@@ -1,18 +1,13 @@
 package com.jimny.launcher
 
 import android.app.Activity
-import android.content.ComponentName
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.media.session.MediaController
-import android.media.session.MediaSessionManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.provider.Settings
-import android.service.notification.NotificationListenerService
 import android.view.Gravity
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -27,11 +22,7 @@ class MainActivity : Activity() {
     private val orange = Color.rgb(255, 159, 54)
     private val dark = Color.rgb(20, 16, 17)
     private val handler = Handler(Looper.getMainLooper())
-    private var title: TextView? = null
-    private var artist: TextView? = null
-    private var status: TextView? = null
     private var clock: TextView? = null
-    private var controller: MediaController? = null
     private var map: WebView? = null
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
     private fun label(s: String, size: Float = 16f, color: Int = Color.WHITE): TextView =
@@ -46,24 +37,9 @@ class MainActivity : Activity() {
     private fun open(pkg: String) {
         packageManager.getLaunchIntentForPackage(pkg)?.let { startActivity(it) }
     }
-    private fun current(): MediaController? = try {
-        val manager=getSystemService(MEDIA_SESSION_SERVICE) as MediaSessionManager
-        val sessions=manager.getActiveSessions(ComponentName(this,MusicListener::class.java))
-        sessions.firstOrNull { it.packageName=="com.google.android.apps.youtube.music" }
-            ?: sessions.firstOrNull()
-    } catch (_: SecurityException) { null }
-    private fun refreshMusic() {
-        controller=current()
-        val c=controller
-        val m=c?.metadata
-        title?.text=m?.getString("android.media.metadata.TITLE") ?: "Sin reproducción activa"
-        artist?.text=m?.getString("android.media.metadata.ARTIST") ?: "Abrí YouTube Music para empezar"
-        status?.text=if(c==null) "Activá el acceso a notificaciones para controlar la música" else "Controles integrados · ${c.packageName}"
-    }
     private val tick=object: Runnable {
         override fun run() {
             clock?.text=SimpleDateFormat("HH:mm · EEE d MMM",Locale("es","CR")).format(Date())
-            refreshMusic()
             handler.postDelayed(this,3000)
         }
     }
@@ -72,27 +48,19 @@ class MainActivity : Activity() {
         window.statusBarColor=dark; window.navigationBarColor=dark
         val root=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(12),dp(8),dp(12),dp(8)); setBackgroundColor(dark) }
         val head=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL }
-        head.addView(label("◆ JIMNY / DRIVE  v0.6",22f,orange),LinearLayout.LayoutParams(0,dp(48),1f))
+        head.addView(label("◆ JIMNY / DRIVE  v0.7",22f,orange),LinearLayout.LayoutParams(0,dp(48),1f))
         clock=label("",14f)
         head.addView(clock)
         root.addView(head)
         val body=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL }
         val left=panel()
         left.addView(label("⌂  CASA  /  TRABAJO",17f,orange))
-        left.addView(label("Mapa integrado y controles de música",12f))
+        left.addView(label("Mapa integrado y acceso a tu música",12f))
         val music=panel()
-        music.addView(label("♫  REPRODUCTOR",19f,orange))
-        title=label("Sin reproducción activa",18f)
-        artist=label("",13f)
-        status=label("",11f,orange)
-        music.addView(title);music.addView(artist);music.addView(status)
-        val controls=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL }
-        controls.addView(button("⏮"){ controller?.transportControls?.skipToPrevious() },LinearLayout.LayoutParams(0,dp(50),1f))
-        controls.addView(button("⏯"){ val c=controller; if(c?.playbackState?.state==3) c.transportControls.pause() else c?.transportControls?.play() },LinearLayout.LayoutParams(0,dp(50),1f))
-        controls.addView(button("⏭"){ controller?.transportControls?.skipToNext() },LinearLayout.LayoutParams(0,dp(50),1f))
-        music.addView(controls)
-        music.addView(button("Permitir controles de música"){ startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) })
-        music.addView(button("Abrir YouTube Music para elegir canciones"){ open("com.google.android.apps.youtube.music") })
+        music.addView(label("♫  YOUTUBE MUSIC",19f,orange))
+        music.addView(label("Tu música, sin acceso a notificaciones",14f))
+        music.addView(label("Para proteger tus datos, esta versión no lee mensajes ni controla otras apps desde el panel.",12f))
+        music.addView(button("Abrir YouTube Music ↗"){ open("com.google.android.apps.youtube.music") })
         left.addView(music,LinearLayout.LayoutParams(-1,0,1f).apply { topMargin=dp(12) })
         body.addView(left,LinearLayout.LayoutParams(0,-1,0.95f).apply { rightMargin=dp(12) })
         val right=panel()
