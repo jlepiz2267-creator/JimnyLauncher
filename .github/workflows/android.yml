@@ -83,7 +83,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: JimnyLauncher-v05-APK
+          name: JimnyLauncher-v06-APK
           path: app-distribucion
       - name: Preparar aceleración del emulador (si está disponible)
         shell: bash
