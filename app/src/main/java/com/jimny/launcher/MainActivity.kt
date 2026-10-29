@@ -22,6 +22,7 @@ class MainActivity : Activity() {
     private val orange = Color.rgb(255, 159, 54)
     private val dark = Color.rgb(20, 16, 17)
     private val handler = Handler(Looper.getMainLooper())
+    private var clock: TextView? = null
     private var map: WebView? = null
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
     private fun label(s: String, size: Float = 16f, color: Int = Color.WHITE): TextView =
@@ -47,14 +48,14 @@ class MainActivity : Activity() {
         window.statusBarColor=dark; window.navigationBarColor=dark
         val root=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(12),dp(8),dp(12),dp(8)); setBackgroundColor(dark) }
         val head=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL }
-        head.addView(label("◆ JIMNY / DRIVE  v0.6",22f,orange),LinearLayout.LayoutParams(0,dp(48),1f))
+        head.addView(label("◆ JIMNY / DRIVE  v0.7",22f,orange),LinearLayout.LayoutParams(0,dp(48),1f))
         clock=label("",14f)
         head.addView(clock)
         root.addView(head)
         val body=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL }
         val left=panel()
         left.addView(label("⌂  CASA  /  TRABAJO",17f,orange))
-        left.addView(label("Mapa integrado y controles de música",12f))
+        left.addView(label("Mapa integrado y acceso a tu música",12f))
         val music=panel()
         music.addView(label("♫  YOUTUBE MUSIC",19f,orange))
         music.addView(label("Tu música, sin acceso a notificaciones",14f))
