@@ -1,10 +1,31 @@
-name: Compilar y verificar APK
+name: Compilar y verificar JimnyLauncher
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: jimny-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  panel-web:
+    name: Probar panel web
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pruebas del panel web y enlaces
+        run: node --test tests/dashboard.test.cjs
+
   build:
+    name: Compilar, analizar y firmar APK de prueba
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -17,35 +38,79 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Compilar APK de prueba
-        run: gradle :app:assembleDebug --stacktrace
-      - name: Auditar permisos, firma y hash
+      - name: Compilación, pruebas unitarias y análisis estático
+        run: gradle :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --stacktrace
+      - name: Auditar integridad, firma y permisos
         shell: bash
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
           TOOLS="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
-          test -f "$APK"
+          test -s "$APK"
           {
-            echo "Jimny Launcher - verificacion de APK"
+            echo "JimnyLauncher: informe de paquete"
             echo "Compilacion: $GITHUB_SHA"
             echo "SHA-256:"
             sha256sum "$APK"
             echo
-            echo "Firma digital (APK de depuracion):"
+            echo "Firma del APK de depuracion:"
             "$TOOLS/apksigner" verify --verbose --print-certs "$APK"
             echo
             echo "Permisos declarados:"
             "$TOOLS/aapt" dump permissions "$APK"
           } | tee apk-verificacion.txt
           if "$TOOLS/aapt" dump permissions "$APK" | grep -E 'uses-permission:'; then
-            echo "ERROR: El APK declara permisos; revisar antes de distribuir."
+            echo "ERROR: Se detectaron permisos nuevos."
             exit 1
           fi
-      - name: Publicar APK y reporte de verificacion
+      - name: Publicar APK y análisis
         uses: actions/upload-artifact@v4
         with:
-          name: JimnyLauncher-debug-verificado
+          name: JimnyLauncher-v05-APK
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             apk-verificacion.txt
+            app/build/reports/lint-results-debug.html
+          retention-days: 30
+
+  emulador:
+    name: Instalar y abrir en emulador Android
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: JimnyLauncher-v05-APK
+          path: app-distribucion
+      - name: Preparar aceleración del emulador (si está disponible)
+        shell: bash
+        run: |
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm
+            echo "KVM disponible"
+          else
+            echo "KVM no disponible, se usará emulación por software"
+          fi
+      - name: Arranque Android 15 sin modificar la radio
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          emulator-options: -no-snapshot -no-window -no-audio -gpu swiftshader_indirect -no-boot-anim
+          disable-animations: true
+          script: bash scripts/emulator-smoke.sh
+      - name: Publicar evidencia del emulador
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: JimnyLauncher-v05-emulador
+          path: |
+            arranque-android.txt
+            captura-emulador.png
+          if-no-files-found: warn
+          retention-days: 30
