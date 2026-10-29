@@ -1,206 +1,118 @@
 package com.jimny.launcher
 
 import android.app.Activity
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.widget.FrameLayout
+import android.content.ComponentName
 import android.content.Intent
-import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.media.session.MediaController
+import android.media.session.MediaSessionManager
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
+import android.service.notification.NotificationListenerService
 import android.view.Gravity
-import android.view.View
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
-import android.widget.ScrollView
-import android.widget.ImageView
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class MainActivity : Activity() {
-    private val background = Color.rgb(18, 13, 10)
-    private val panel = Color.rgb(77, 39, 19)
-    private val red = Color.rgb(255, 161, 55)
-    private val muted = Color.rgb(255, 211, 173)
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
-
-    private fun rounded(color: Int, radius: Int = 20): GradientDrawable =
-        GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = dp(radius).toFloat()
-        }
-
-    private fun gradient(top: Int, bottom: Int): GradientDrawable =
-        GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(top, bottom)).apply {
-            cornerRadius = dp(22).toFloat()
-            setStroke(dp(1), Color.rgb(160, 85, 35))
-        }
-
-    private fun text(value: String, size: Float, color: Int = Color.WHITE, bold: Boolean = false): TextView =
-        TextView(this).apply {
-            this.text = value
-            textSize = size
-            setTextColor(color)
-            gravity = Gravity.CENTER_VERTICAL
-            if (bold) typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
-        }
-
-    private fun openApp(name: String, pkg: String) {
-        val intent: Intent? = packageManager.getLaunchIntentForPackage(pkg)
-        if (intent != null) {
-            try {
-                startActivity(intent)
-            } catch (e: Exception) {
-                Toast.makeText(this, "No se pudo abrir $name", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            Toast.makeText(this, "$name no está instalado", Toast.LENGTH_SHORT).show()
+    private val orange = Color.rgb(255, 159, 54)
+    private val dark = Color.rgb(20, 16, 17)
+    private val handler = Handler(Looper.getMainLooper())
+    private var title: TextView? = null
+    private var artist: TextView? = null
+    private var status: TextView? = null
+    private var clock: TextView? = null
+    private var controller: MediaController? = null
+    private var map: WebView? = null
+    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+    private fun label(s: String, size: Float = 16f, color: Int = Color.WHITE): TextView =
+        TextView(this).apply { text=s; textSize=size; setTextColor(color); gravity=Gravity.CENTER_VERTICAL; setPadding(dp(8),dp(3),dp(8),dp(3)) }
+    private fun panel(): LinearLayout = LinearLayout(this).apply {
+        orientation=LinearLayout.VERTICAL; setPadding(dp(10),dp(10),dp(10),dp(10))
+        background=GradientDrawable().apply { setColor(Color.rgb(49,32,27)); cornerRadius=dp(18).toFloat() }
+    }
+    private fun button(s: String, action: () -> Unit): Button = Button(this).apply {
+        text=s; setAllCaps(false); setTextColor(Color.WHITE); setBackgroundColor(Color.rgb(119,62,30)); setOnClickListener { action() }
+    }
+    private fun open(pkg: String) {
+        packageManager.getLaunchIntentForPackage(pkg)?.let { startActivity(it) }
+    }
+    private fun current(): MediaController? = try {
+        val manager=getSystemService(MEDIA_SESSION_SERVICE) as MediaSessionManager
+        val sessions=manager.getActiveSessions(ComponentName(this,MusicListener::class.java))
+        sessions.firstOrNull { it.packageName=="com.google.android.apps.youtube.music" }
+            ?: sessions.firstOrNull()
+    } catch (_: SecurityException) { null }
+    private fun refreshMusic() {
+        controller=current()
+        val c=controller
+        val m=c?.metadata
+        title?.text=m?.getString("android.media.metadata.TITLE") ?: "Sin reproducción activa"
+        artist?.text=m?.getString("android.media.metadata.ARTIST") ?: "Abrí YouTube Music para empezar"
+        status?.text=if(c==null) "Activá el acceso a notificaciones para controlar la música" else "Controles integrados · ${c.packageName}"
+    }
+    private val tick=object: Runnable {
+        override fun run() {
+            clock?.text=SimpleDateFormat("HH:mm · EEE d MMM",Locale("es","CR")).format(Date())
+            refreshMusic()
+            handler.postDelayed(this,3000)
         }
     }
-
-    private fun appCard(symbol: String, title: String, subtitle: String, pkg: String, color: Int): LinearLayout =
-        LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(20), dp(12), dp(14), dp(12))
-            background = rounded(color, 18)
-            addView(text(symbol, 22f))
-            addView(text(title, 19f, Color.WHITE, true))
-            addView(text(subtitle, 11f, Color.rgb(224, 227, 232)))
-            isClickable = true
-            setOnClickListener { openApp(title, pkg) }
-        }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = background
-        window.navigationBarColor = background
-
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(22), dp(12), dp(22), dp(14))
-            background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(Color.rgb(52, 26, 13), this@MainActivity.background))
+        window.statusBarColor=dark; window.navigationBarColor=dark
+        val root=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(12),dp(8),dp(12),dp(8)); setBackgroundColor(dark) }
+        val head=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL }
+        head.addView(label("◆ JIMNY / DRIVE  v0.6",22f,orange),LinearLayout.LayoutParams(0,dp(48),1f))
+        clock=label("",14f)
+        head.addView(clock)
+        root.addView(head)
+        val body=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL }
+        val left=panel()
+        left.addView(label("⌂  CASA  /  TRABAJO",17f,orange))
+        left.addView(label("Mapa integrado y controles de música",12f))
+        val music=panel()
+        music.addView(label("♫  REPRODUCTOR",19f,orange))
+        title=label("Sin reproducción activa",18f)
+        artist=label("",13f)
+        status=label("",11f,orange)
+        music.addView(title);music.addView(artist);music.addView(status)
+        val controls=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL }
+        controls.addView(button("⏮"){ controller?.transportControls?.skipToPrevious() },LinearLayout.LayoutParams(0,dp(50),1f))
+        controls.addView(button("⏯"){ val c=controller; if(c?.playbackState?.state==3) c.transportControls.pause() else c?.transportControls?.play() },LinearLayout.LayoutParams(0,dp(50),1f))
+        controls.addView(button("⏭"){ controller?.transportControls?.skipToNext() },LinearLayout.LayoutParams(0,dp(50),1f))
+        music.addView(controls)
+        music.addView(button("Permitir controles de música"){ startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) })
+        music.addView(button("Abrir YouTube Music para elegir canciones"){ open("com.google.android.apps.youtube.music") })
+        left.addView(music,LinearLayout.LayoutParams(-1,0,1f).apply { topMargin=dp(12) })
+        body.addView(left,LinearLayout.LayoutParams(0,-1,0.95f).apply { rightMargin=dp(12) })
+        val right=panel()
+        right.addView(label("⌖ MAPA INTERACTIVO · OpenStreetMap",17f,orange))
+        map=WebView(this).apply {
+            settings.javaScriptEnabled=true
+            settings.domStorageEnabled=true
+            webViewClient=WebViewClient()
+            loadUrl("file:///android_asset/map.html")
         }
-
-        val header = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        val brand = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        brand.addView(text("JIMNY  /  DRIVE", 27f, Color.WHITE, true))
-        brand.addView(text("DRIVE  /  LAUNCHER", 11f, red, true))
-        header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
-        header.addView(text("●  SISTEMA LISTO", 12f, muted))
-        root.addView(header, LinearLayout.LayoutParams(-1, dp(66)))
-
-        val body = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        fun card(top: Int, bottom: Int) = gradient(top, bottom)
-        fun column(): LinearLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(dp(14), dp(12), dp(14), dp(12))
-        }
-
-        val left = column().apply {
-            background = card(Color.rgb(232, 115, 21), Color.rgb(104, 43, 12))
-            addView(text("Hola, Juan", 28f, Color.WHITE, true))
-            addView(text("Bienvenido a tu Jimny", 13f, Color.WHITE))
-            addView(text("SUZUKI JIMNY JB74", 12f, muted, true))
-            addView(ImageView(this@MainActivity).apply {
-                setImageResource(R.drawable.jimny_white)
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                contentDescription = "Ilustración de Suzuki Jimny blanco con franjas laterales"
-            }, LinearLayout.LayoutParams(-1, 0, 1f))
-            addView(text("TU JIMNY BLANCO", 13f, Color.WHITE, true))
-            addView(text("Diseño naranja · Personalizado", 11f, muted))
-        }
-        body.addView(left, LinearLayout.LayoutParams(0, -1, 1.2f).apply { rightMargin = dp(10) })
-
-        val center = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val clockPanel = column().apply {
-            background = card(Color.rgb(93, 43, 19), Color.rgb(43, 24, 17))
-        }
-        val clock = text("", 36f, Color.WHITE, true).apply { gravity = Gravity.CENTER }
-        val date = text("", 12f, muted).apply { gravity = Gravity.CENTER }
-        clockPanel.addView(clock)
-        clockPanel.addView(date)
-        center.addView(clockPanel, LinearLayout.LayoutParams(-1, 0, 0.9f))
-        center.addView(appCard("↗", "Google Maps", "Abrir navegación", "com.google.android.apps.maps", Color.rgb(141, 65, 22)),
-            LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(8) })
-        center.addView(appCard("➤", "Waze", "Rutas y tráfico", "com.waze", Color.rgb(116, 49, 19)),
-            LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(8) })
-        body.addView(center, LinearLayout.LayoutParams(0, -1, 0.95f).apply { rightMargin = dp(10) })
-
-        val music = column().apply {
-            background = card(Color.rgb(197, 87, 18), Color.rgb(59, 28, 16))
-            isClickable = true
-            setOnClickListener { openApp("YouTube Music", "com.google.android.apps.youtube.music") }
-        }
-        music.addView(text("♫  YouTube Music", 21f, Color.WHITE, true))
-        music.addView(text("♪", 74f, red, true).apply { gravity = Gravity.CENTER },
-            LinearLayout.LayoutParams(-1, 0, 1f))
-        music.addView(text("TU MÚSICA", 16f, Color.WHITE, true))
-        music.addView(text("Abrir YouTube Music  ↗", 13f, muted))
-        music.addView(text("La canción y los controles se integrarán después", 10f, muted))
-        body.addView(music, LinearLayout.LayoutParams(0, -1, 1.1f))
-        root.addView(body, LinearLayout.LayoutParams(-1, 0, 1f))
-
-        val footer = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-        }
-        footer.addView(text("⌖  NAVEGACIÓN", 12f, muted))
-        footer.addView(text("      •      ", 12f, red))
-        footer.addView(text("♫  MÚSICA", 12f, muted))
-        footer.addView(text("      •      ", 12f, red))
-        footer.addView(text("JIMNY LAUNCHER V0.5", 12f, muted))
-        root.addView(footer, LinearLayout.LayoutParams(-1, dp(36)))
-
-        val container = FrameLayout(this)
-        container.addView(root, FrameLayout.LayoutParams(-1, -1))
-        val welcome = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setBackgroundColor(this@MainActivity.background)
-            addView(text("◆  SUZUKI JIMNY  ◆", 16f, red, true).apply {
-                gravity = Gravity.CENTER
-            })
-            addView(text("BIENVENIDO, JUAN", 34f, Color.WHITE, true).apply {
-                gravity = Gravity.CENTER
-                setPadding(dp(12), dp(20), dp(12), dp(12))
-            })
-            addView(text("JIMNY LAUNCHER", 15f, muted, true).apply {
-                gravity = Gravity.CENTER
-            })
-        }
-        container.addView(welcome, FrameLayout.LayoutParams(-1, -1))
-        setContentView(container)
-        Handler(Looper.getMainLooper()).postDelayed({
-            if (!isFinishing && !isDestroyed) {
-                welcome.animate().alpha(0f).setDuration(450).withEndAction {
-                    container.removeView(welcome)
-                }.start()
-            }
-        }, 2600)
-
-        val timeFormat = SimpleDateFormat("HH:mm", Locale("es", "CR"))
-        val dateFormat = SimpleDateFormat("EEE d MMM yyyy", Locale("es", "CR"))
-        val update = object : Runnable {
-            override fun run() {
-                clock.text = timeFormat.format(Date())
-                date.text = dateFormat.format(Date())
-                clock.postDelayed(this, 30_000)
-            }
-        }
-        update.run()
+        right.addView(map,LinearLayout.LayoutParams(-1,0,1f))
+        val nav=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL }
+        nav.addView(button("Google Maps ↗"){open("com.google.android.apps.maps")},LinearLayout.LayoutParams(0,dp(46),1f))
+        nav.addView(button("Waze ↗"){open("com.waze")},LinearLayout.LayoutParams(0,dp(46),1f))
+        right.addView(nav)
+        body.addView(right,LinearLayout.LayoutParams(0,-1,1.6f))
+        root.addView(body,LinearLayout.LayoutParams(-1,0,1f))
+        setContentView(root)
     }
+    override fun onResume(){ super.onResume();handler.removeCallbacks(tick);tick.run() }
+    override fun onPause(){handler.removeCallbacks(tick);super.onPause()}
+    override fun onDestroy(){map?.destroy();super.onDestroy()}
 }
