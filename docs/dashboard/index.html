@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es-CR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#130e0a">
+  <meta name="description" content="Panel de prueba Jimny Launcher para teléfono y navegadores compatibles.">
+  <title>Jimny Launcher — Panel</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <div class="dashboard" id="dashboard">
+    <header class="topbar">
+      <div><div class="kicker">SUZUKI / PERSONAL DRIVE</div><h1>JIMNY <span>LAUNCHER</span></h1></div>
+      <div class="timebox"><time id="clock" aria-label="Hora">--:--</time><span id="date">Cargando fecha…</span></div>
+    </header>
+    <main class="content" id="main">
+      <section class="hero" aria-label="Bienvenida">
+        <div class="accent-bar"></div>
+        <div class="greeting">HOLA, JUAN</div>
+        <h2>Bienvenido a<br><em>tu Jimny.</em></h2>
+        <p>Tu espacio de navegación y música, con el estilo de tu Suzuki.</p>
+        <svg class="car" viewBox="0 0 630 300" role="img" aria-label="Ilustración de Suzuki Jimny blanco">
+          <defs>
+            <linearGradient id="paint" x1="0" y1="0" x2=".2" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#b9bbc1"/></linearGradient>
+          </defs>
+          <ellipse cx="315" cy="258" rx="260" ry="23" fill="#000" opacity=".32"/>
+          <g stroke="#161719" stroke-width="7" stroke-linejoin="round">
+            <path d="M102 172V88q0-28 27-28h292q26 0 26 27v72l72 28q18 7 18 24v21H89v-38q0-18 13-22z" fill="url(#paint)"/>
+            <path d="M150 75h122v87H140V93q0-18 10-18zm145 0h109q20 0 20 22v65H295z" fill="#35444d" opacity=".94"/>
+            <path d="M294 72v93M126 169h310" fill="none"/>
+            <path d="M107 189h419v37H107z" fill="#b7bbc0"/>
+            <rect x="456" y="185" width="57" height="22" rx="7" fill="#f28b25"/>
+            <rect x="93" y="183" width="29" height="28" rx="6" fill="#ffcf77"/>
+            <path d="M155 178h196" stroke="#ec8124" stroke-width="9"/>
+            <circle cx="183" cy="232" r="46" fill="#202124"/><circle cx="183" cy="232" r="21" fill="#c5c9cf"/>
+            <circle cx="453" cy="232" r="46" fill="#202124"/><circle cx="453" cy="232" r="21" fill="#c5c9cf"/>
+            <rect x="91" y="221" width="437" height="12" rx="3" fill="#313338"/>
+          </g>
+          <text x="305" y="205" fill="#333" font-size="18" letter-spacing="6" font-weight="800" text-anchor="middle">JIMNY</text>
+        </svg>
+        <div class="model">JB74 · BLANCO · EDICIÓN PERSONAL</div>
+      </section>
+      <section class="actions" aria-label="Aplicaciones">
+        <div class="panel-heading"><span>ACCESOS DIRECTOS</span><span class="tiny-orbit" aria-hidden="true"></span></div>
+        <a class="action maps" href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" aria-label="Abrir Google Maps">
+          <span class="symbol" aria-hidden="true">⌖</span><span><strong>GOOGLE MAPS</strong><small>Navegación y rutas</small></span><span class="chevron" aria-hidden="true">↗</span>
+        </a>
+        <a class="action waze" href="https://www.waze.com/live-map/" target="_blank" rel="noopener noreferrer" aria-label="Abrir Waze">
+          <span class="symbol" aria-hidden="true">➤</span><span><strong>WAZE</strong><small>Tráfico en tiempo real</small></span><span class="chevron" aria-hidden="true">↗</span>
+        </a>
+        <a class="action music" href="https://music.youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="Abrir YouTube Music">
+          <span class="symbol" aria-hidden="true">♫</span><span><strong>YOUTUBE MUSIC</strong><small>Escuchar tu música</small></span><span class="chevron" aria-hidden="true">↗</span>
+        </a>
+        <div class="note" role="note"><span aria-hidden="true">ⓘ</span> Panel experimental. Los enlaces externos pueden abrirse en el teléfono o no estar admitidos por Android Auto. Usá esta pantalla únicamente con el vehículo estacionado.</div>
+      </section>
+    </main>
+    <footer><span>JIMNY LAUNCHER · WEB PREVIEW v0.5</span><span>NEGRO / NARANJA / JB74</span></footer>
+  </div>
+  <div id="welcome" class="welcome" role="status" aria-live="polite">
+    <span class="welcome-mark" aria-hidden="true">◆</span>
+    <span class="welcome-title">BIENVENIDO, JUAN</span>
+    <span class="welcome-sub">SUZUKI JIMNY · PERSONAL DRIVE</span>
+    <button type="button" id="skip-welcome" aria-label="Continuar al panel">ENTRAR AL PANEL →</button>
+  </div>
+  <script src="dashboard.js" defer></script>
+</body>
+</html>
