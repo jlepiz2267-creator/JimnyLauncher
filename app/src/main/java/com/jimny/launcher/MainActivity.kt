@@ -47,7 +47,7 @@ class MainActivity : Activity() {
         listOf(
             "MAPS" to "com.google.android.apps.maps",
             "WAZE" to "com.waze",
-            "SPOTIFY" to "com.spotify.music"
+            "YOUTUBE MUSIC" to "com.google.android.apps.youtube.music"
         ).forEach { (name, pkg) ->
             val button = Button(this).apply {
                 text = name
