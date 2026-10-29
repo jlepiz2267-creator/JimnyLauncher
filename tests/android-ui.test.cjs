@@ -11,7 +11,7 @@ const workflow = fs.readFileSync(path.join(base,".github/workflows/android.yml")
 test("la interfaz naranja y bienvenida originales siguen presentes",()=>{
  for (const value of [
   "BIENVENIDO, JUAN","Hola, Juan","JIMNY  /  DRIVE","SUZUKI JIMNY JB74",
-  "TU JIMNY BLANCO","R.drawable.jimny_white","YouTube Music","Google Maps","Waze",
+  "TU JIMNY ORIGINAL","R.drawable.jimny_white","YouTube Music","Google Maps","Waze",
   "JIMNY LAUNCHER V0.8.1"
  ]) assert.ok(ui.includes(value), `Falta ${value}`);
 });
@@ -35,7 +35,7 @@ test("se mantiene mapa de carga opcional y sin flashear firmware",()=>{
  assert.doesNotMatch(ui,/\.FIR|\.U88|\.up6|flashFirmware/);
 });
 test("puede elegir la foto original sin solicitar permiso de galería",()=>{
- assert.match(ui,/Intent\\.ACTION_OPEN_DOCUMENT/);
+ assert.match(ui,/Intent\.ACTION_OPEN_DOCUMENT/);
  assert.match(ui,/chosen_original_car_uri/);
  assert.match(ui,/TU JIMNY ORIGINAL/);
  assert.match(ui,/displayOriginalCarPhoto/);
