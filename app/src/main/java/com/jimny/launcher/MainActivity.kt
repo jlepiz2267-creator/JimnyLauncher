@@ -20,10 +20,10 @@ import java.util.Date
 import java.util.Locale
 
 class MainActivity : Activity() {
-    private val background = Color.rgb(11, 14, 18)
-    private val panel = Color.rgb(27, 32, 39)
-    private val red = Color.rgb(209, 53, 58)
-    private val muted = Color.rgb(165, 175, 187)
+    private val background = Color.rgb(18, 13, 10)
+    private val panel = Color.rgb(77, 39, 19)
+    private val red = Color.rgb(255, 161, 55)
+    private val muted = Color.rgb(255, 211, 173)
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
@@ -31,6 +31,12 @@ class MainActivity : Activity() {
         GradientDrawable().apply {
             setColor(color)
             cornerRadius = dp(radius).toFloat()
+        }
+
+    private fun gradient(top: Int, bottom: Int): GradientDrawable =
+        GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(top, bottom)).apply {
+            cornerRadius = dp(22).toFloat()
+            setStroke(dp(1), Color.rgb(160, 85, 35))
         }
 
     private fun text(value: String, size: Float, color: Int = Color.WHITE, bold: Boolean = false): TextView =
@@ -76,7 +82,7 @@ class MainActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(22), dp(12), dp(22), dp(14))
-            setBackgroundColor(background)
+            background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(Color.rgb(52, 26, 13), background))
         }
 
         val header = LinearLayout(this).apply {
@@ -84,7 +90,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
         }
         val brand = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        brand.addView(text("JIMNY", 27f, Color.WHITE, true))
+        brand.addView(text("JIMNY  /  DRIVE", 27f, Color.WHITE, true))
         brand.addView(text("DRIVE  /  LAUNCHER", 11f, red, true))
         header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(text("●  SISTEMA LISTO", 12f, muted))
@@ -96,18 +102,22 @@ class MainActivity : Activity() {
         }
 
         val navigation = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        navigation.addView(text("NAVEGACIÓN", 12f, muted, true))
+        navigation.addView(text("HOLA, JAIME", 23f, Color.WHITE, true))
+        navigation.addView(text("Tu Suzuki Jimny JB74", 12f, muted))
+        navigation.addView(text("NAVEGACIÓN", 12f, red, true))
         navigation.addView(appCard("↗", "Google Maps", "Abrir navegación", "com.google.android.apps.maps", panel),
             LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(10) })
         navigation.addView(appCard("➤", "Waze", "Rutas y tráfico", "com.waze", panel),
             LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(10) })
-        body.addView(navigation, LinearLayout.LayoutParams(0, -1, 1f).apply { rightMargin = dp(12) })
+        navigation.background = gradient(Color.rgb(189, 91, 23), Color.rgb(80, 37, 17))
+        navigation.setPadding(dp(14), dp(12), dp(14), dp(12))
+        body.addView(navigation, LinearLayout.LayoutParams(0, -1, 1.12f).apply { rightMargin = dp(12) })
 
         val music = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(22), dp(16), dp(22), dp(16))
-            background = rounded(Color.rgb(44, 26, 33), 22)
+            background = gradient(Color.rgb(215, 104, 26), Color.rgb(91, 35, 15))
             isClickable = true
             setOnClickListener { openApp("YouTube Music", "com.google.android.apps.youtube.music") }
         }
@@ -115,13 +125,13 @@ class MainActivity : Activity() {
         music.addView(text("TU MÚSICA", 11f, muted, true))
         music.addView(text("YouTube Music", 24f, Color.WHITE, true))
         music.addView(text("Tocá para abrir el reproductor  ↗", 12f, muted))
-        body.addView(music, LinearLayout.LayoutParams(0, -1, 1.25f).apply { rightMargin = dp(12) })
+        body.addView(music, LinearLayout.LayoutParams(0, -1, 1.12f).apply { rightMargin = dp(12) })
 
         val info = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             setPadding(dp(14), dp(12), dp(14), dp(12))
-            background = rounded(panel, 22)
+            background = gradient(Color.rgb(142, 63, 19), Color.rgb(53, 29, 20))
         }
         info.addView(text("HORA LOCAL", 11f, muted, true))
         val clock = text("", 37f, Color.WHITE, true)
@@ -134,10 +144,10 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             setPadding(0, dp(15), 0, 0)
         })
-        body.addView(info, LinearLayout.LayoutParams(0, -1, 0.85f))
+        body.addView(info, LinearLayout.LayoutParams(0, -1, 0.95f))
         root.addView(body, LinearLayout.LayoutParams(-1, 0, 1f))
 
-        val footer = text("JIMNY LAUNCHER  /  V0.2      •      Usar aplicaciones de video solo estacionado", 10f, muted)
+        val footer = text("JIMNY LAUNCHER  /  V0.3      •      Usar aplicaciones de video solo estacionado", 10f, muted)
         footer.gravity = Gravity.CENTER
         root.addView(footer, LinearLayout.LayoutParams(-1, dp(34)))
 
