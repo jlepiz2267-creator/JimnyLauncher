@@ -205,10 +205,10 @@ class MainActivity : Activity() {
             addView(text("Bienvenido a tu Jimny", 13f, Color.WHITE))
             addView(text("SUZUKI JIMNY JB74", 12f, muted, true))
             val photoView = ImageView(this@MainActivity).apply {
-                setImageResource(R.drawable.jimny_white)
+                setImageResource(R.drawable.jimny_original)
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 adjustViewBounds = true
-                contentDescription = "Suzuki Jimny blanco; podés elegir la foto original"
+                contentDescription = "Suzuki Jimny blanco real, con sus franjas originales. Podés elegir otra foto del carro"
             }
             carImage = photoView
             addView(photoView, LinearLayout.LayoutParams(-1, 0, 1f))
@@ -217,7 +217,7 @@ class MainActivity : Activity() {
                 carImagePrefs.edit().remove("chosen_original_car_uri").apply()
             }
             addView(text("TU JIMNY ORIGINAL", 13f, Color.WHITE, true))
-            addView(text("▣  ELEGIR FOTO DE MI JIMNY", 12f, Color.WHITE, true).apply {
+            addView(text("▣  CAMBIAR FOTO DE MI JIMNY", 12f, Color.WHITE, true).apply {
                 setPadding(dp(8), dp(10), dp(8), dp(10))
                 background = rounded(Color.rgb(100, 46, 19), 10)
                 isClickable = true
