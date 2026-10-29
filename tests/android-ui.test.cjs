@@ -12,7 +12,7 @@ test("la interfaz naranja y bienvenida originales siguen presentes",()=>{
  for (const value of [
   "BIENVENIDO, JUAN","Hola, Juan","JIMNY  /  DRIVE","SUZUKI JIMNY JB74",
   "TU JIMNY BLANCO","R.drawable.jimny_white","YouTube Music","Google Maps","Waze",
-  "JIMNY LAUNCHER V0.8"
+  "JIMNY LAUNCHER V0.8.1"
  ]) assert.ok(ui.includes(value), `Falta ${value}`);
 });
 test("la pantalla inicial es el dashboard completo y no el mapa simplificado",()=>{
@@ -34,8 +34,15 @@ test("se mantiene mapa de carga opcional y sin flashear firmware",()=>{
  assert.match(ui,/if \(web\.url == null\)/);
  assert.doesNotMatch(ui,/\.FIR|\.U88|\.up6|flashFirmware/);
 });
-test("la compilación corresponde al APK restaurado v0.8",()=>{
- assert.match(gradle,/versionCode = 8/);
- assert.match(gradle,/versionName = "0\.8\.0"/);
- assert.match(workflow,/JimnyLauncher-v08-APK/);
+test("puede elegir la foto original sin solicitar permiso de galería",()=>{
+ assert.match(ui,/Intent\\.ACTION_OPEN_DOCUMENT/);
+ assert.match(ui,/chosen_original_car_uri/);
+ assert.match(ui,/TU JIMNY ORIGINAL/);
+ assert.match(ui,/displayOriginalCarPhoto/);
+ assert.doesNotMatch(manifest,/READ_MEDIA_IMAGES|READ_EXTERNAL_STORAGE|MANAGE_EXTERNAL_STORAGE/);
+});
+test("la compilación corresponde al APK restaurado v0.8.1",()=>{
+ assert.match(gradle,/versionCode = 9/);
+ assert.match(gradle,/versionName = "0\.8\.1"/);
+ assert.match(workflow,/JimnyLauncher-v081-APK/);
 });
