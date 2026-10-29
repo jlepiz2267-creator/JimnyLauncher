@@ -6,6 +6,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: jimny-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   panel-web:
     name: Probar panel web
