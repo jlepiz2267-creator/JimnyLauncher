@@ -1,7 +1,7 @@
 name: Compilar y verificar JimnyLauncher
 on:
   push:
-    branches: [main, "feature/**"]
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -85,6 +85,15 @@ jobs:
         with:
           name: JimnyLauncher-v05-APK
           path: app-distribucion
+      - name: Preparar aceleración del emulador (si está disponible)
+        shell: bash
+        run: |
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm
+            echo "KVM disponible"
+          else
+            echo "KVM no disponible, se usará emulación por software"
+          fi
       - name: Arranque Android 15 sin modificar la radio
         uses: reactivecircus/android-emulator-runner@v2
         with:
