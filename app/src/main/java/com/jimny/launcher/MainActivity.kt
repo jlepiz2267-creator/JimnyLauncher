@@ -2,6 +2,9 @@ package com.jimny.launcher
 
 import android.app.Activity
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.widget.FrameLayout
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -138,7 +141,32 @@ class MainActivity : Activity() {
         footer.gravity = Gravity.CENTER
         root.addView(footer, LinearLayout.LayoutParams(-1, dp(34)))
 
-        setContentView(root)
+        val container = FrameLayout(this)
+        container.addView(root, FrameLayout.LayoutParams(-1, -1))
+        val welcome = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setBackgroundColor(background)
+            addView(text("◆  SUZUKI JIMNY  ◆", 16f, red, true).apply {
+                gravity = Gravity.CENTER
+            })
+            addView(text("BIENVENIDO, JAIME", 34f, Color.WHITE, true).apply {
+                gravity = Gravity.CENTER
+                setPadding(dp(12), dp(20), dp(12), dp(12))
+            })
+            addView(text("JIMNY LAUNCHER", 15f, muted, true).apply {
+                gravity = Gravity.CENTER
+            })
+        }
+        container.addView(welcome, FrameLayout.LayoutParams(-1, -1))
+        setContentView(container)
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (!isFinishing && !isDestroyed) {
+                welcome.animate().alpha(0f).setDuration(450).withEndAction {
+                    container.removeView(welcome)
+                }.start()
+            }
+        }, 2600)
 
         val timeFormat = SimpleDateFormat("HH:mm", Locale("es", "CR"))
         val dateFormat = SimpleDateFormat("EEE d MMM yyyy", Locale("es", "CR"))
