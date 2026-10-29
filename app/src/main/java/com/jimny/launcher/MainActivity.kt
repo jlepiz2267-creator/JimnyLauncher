@@ -3,10 +3,12 @@ package com.jimny.launcher
 import android.app.Activity
 import android.os.Bundle
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
-import android.widget.Button
+import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -15,53 +17,138 @@ import java.util.Date
 import java.util.Locale
 
 class MainActivity : Activity() {
+    private val background = Color.rgb(11, 14, 18)
+    private val panel = Color.rgb(27, 32, 39)
+    private val red = Color.rgb(209, 53, 58)
+    private val muted = Color.rgb(165, 175, 187)
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private fun rounded(color: Int, radius: Int = 20): GradientDrawable =
+        GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = dp(radius).toFloat()
+        }
+
+    private fun text(value: String, size: Float, color: Int = Color.WHITE, bold: Boolean = false): TextView =
+        TextView(this).apply {
+            this.text = value
+            textSize = size
+            setTextColor(color)
+            gravity = Gravity.CENTER_VERTICAL
+            if (bold) typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+        }
+
+    private fun openApp(name: String, pkg: String) {
+        val intent: Intent? = packageManager.getLaunchIntentForPackage(pkg)
+        if (intent != null) {
+            try {
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(this, "No se pudo abrir $name", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(this, "$name no está instalado", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun appCard(symbol: String, title: String, subtitle: String, pkg: String, color: Int): LinearLayout =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(20), dp(12), dp(14), dp(12))
+            background = rounded(color, 18)
+            addView(text(symbol, 22f))
+            addView(text(title, 19f, Color.WHITE, true))
+            addView(text(subtitle, 11f, Color.rgb(224, 227, 232)))
+            isClickable = true
+            setOnClickListener { openApp(title, pkg) }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = Color.BLACK
-        window.navigationBarColor = Color.BLACK
+        window.statusBarColor = background
+        window.navigationBarColor = background
+
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(24, 16, 24, 16)
-            setBackgroundColor(Color.rgb(15, 17, 20))
+            setPadding(dp(22), dp(12), dp(22), dp(14))
+            setBackgroundColor(background)
         }
-        fun label(value: String, size: Float): TextView = TextView(this).apply {
-            text = value
-            textSize = size
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-            typeface = Typeface.DEFAULT_BOLD
+
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
         }
-        root.addView(label("JIMNY  •  LAUNCHER", 28f))
-        val clock = label("", 24f)
-        root.addView(clock)
-        val formatter = SimpleDateFormat("EEE d MMM  •  HH:mm", Locale("es", "CR"))
-        val ticker = object : Runnable {
+        val brand = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        brand.addView(text("JIMNY", 27f, Color.WHITE, true))
+        brand.addView(text("DRIVE  /  LAUNCHER", 11f, red, true))
+        header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
+        header.addView(text("●  SISTEMA LISTO", 12f, muted))
+        root.addView(header, LinearLayout.LayoutParams(-1, dp(66)))
+
+        val body = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        val navigation = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        navigation.addView(text("NAVEGACIÓN", 12f, muted, true))
+        navigation.addView(appCard("↗", "Google Maps", "Abrir navegación", "com.google.android.apps.maps", panel),
+            LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(10) })
+        navigation.addView(appCard("➤", "Waze", "Rutas y tráfico", "com.waze", panel),
+            LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(10) })
+        body.addView(navigation, LinearLayout.LayoutParams(0, -1, 1f).apply { rightMargin = dp(12) })
+
+        val music = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(22), dp(16), dp(22), dp(16))
+            background = rounded(Color.rgb(44, 26, 33), 22)
+            isClickable = true
+            setOnClickListener { openApp("YouTube Music", "com.google.android.apps.youtube.music") }
+        }
+        music.addView(text("♫", 47f, red, true))
+        music.addView(text("TU MÚSICA", 11f, muted, true))
+        music.addView(text("YouTube Music", 24f, Color.WHITE, true))
+        music.addView(text("Tocá para abrir el reproductor  ↗", 12f, muted))
+        body.addView(music, LinearLayout.LayoutParams(0, -1, 1.25f).apply { rightMargin = dp(12) })
+
+        val info = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = rounded(panel, 22)
+        }
+        info.addView(text("HORA LOCAL", 11f, muted, true))
+        val clock = text("", 37f, Color.WHITE, true)
+        clock.gravity = Gravity.CENTER
+        info.addView(clock)
+        val date = text("", 15f, muted)
+        date.gravity = Gravity.CENTER
+        info.addView(date)
+        info.addView(text("SUZUKI  •  JB74", 12f, red, true).apply {
+            gravity = Gravity.CENTER
+            setPadding(0, dp(15), 0, 0)
+        })
+        body.addView(info, LinearLayout.LayoutParams(0, -1, 0.85f))
+        root.addView(body, LinearLayout.LayoutParams(-1, 0, 1f))
+
+        val footer = text("JIMNY LAUNCHER  /  V0.2      •      Usar aplicaciones de video solo estacionado", 10f, muted)
+        footer.gravity = Gravity.CENTER
+        root.addView(footer, LinearLayout.LayoutParams(-1, dp(34)))
+
+        setContentView(root)
+
+        val timeFormat = SimpleDateFormat("HH:mm", Locale("es", "CR"))
+        val dateFormat = SimpleDateFormat("EEE d MMM yyyy", Locale("es", "CR"))
+        val update = object : Runnable {
             override fun run() {
-                clock.text = formatter.format(Date())
+                clock.text = timeFormat.format(Date())
+                date.text = dateFormat.format(Date())
                 clock.postDelayed(this, 30_000)
             }
         }
-        ticker.run()
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
-        listOf(
-            "MAPS" to "com.google.android.apps.maps",
-            "WAZE" to "com.waze",
-            "YOUTUBE MUSIC" to "com.google.android.apps.youtube.music"
-        ).forEach { (name, pkg) ->
-            val button = Button(this).apply {
-                text = name
-                setTextColor(Color.WHITE)
-                setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(150, 30, 35)))
-                setOnClickListener {
-                    val intent: Intent? = packageManager.getLaunchIntentForPackage(pkg)
-                    if (intent != null) startActivity(intent)
-                    else Toast.makeText(this@MainActivity, "$name no está instalado", Toast.LENGTH_SHORT).show()
-                }
-            }
-            row.addView(button, LinearLayout.LayoutParams(0, 88, 1f).apply { setMargins(8, 12, 8, 0) })
-        }
-        root.addView(row, LinearLayout.LayoutParams(-1, -2))
-        setContentView(root)
+        update.run()
     }
 }
