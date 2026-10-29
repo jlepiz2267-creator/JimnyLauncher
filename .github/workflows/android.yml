@@ -1,4 +1,4 @@
-name: Compilar APK
+name: Compilar y verificar APK
 on:
   push:
     branches: [main]
@@ -19,7 +19,33 @@ jobs:
           gradle-version: '8.9'
       - name: Compilar APK de prueba
         run: gradle :app:assembleDebug --stacktrace
-      - uses: actions/upload-artifact@v4
+      - name: Auditar permisos, firma y hash
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          TOOLS="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
+          test -f "$APK"
+          {
+            echo "Jimny Launcher - verificacion de APK"
+            echo "Compilacion: $GITHUB_SHA"
+            echo "SHA-256:"
+            sha256sum "$APK"
+            echo
+            echo "Firma digital (APK de depuracion):"
+            "$TOOLS/apksigner" verify --verbose --print-certs "$APK"
+            echo
+            echo "Permisos declarados:"
+            "$TOOLS/aapt" dump permissions "$APK"
+          } | tee apk-verificacion.txt
+          if "$TOOLS/aapt" dump permissions "$APK" | grep -E 'uses-permission:'; then
+            echo "ERROR: El APK declara permisos; revisar antes de distribuir."
+            exit 1
+          fi
+      - name: Publicar APK y reporte de verificacion
+        uses: actions/upload-artifact@v4
         with:
-          name: JimnyLauncher-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: JimnyLauncher-debug-verificado
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            apk-verificacion.txt
