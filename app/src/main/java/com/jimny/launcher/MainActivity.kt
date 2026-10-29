@@ -15,6 +15,7 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import android.widget.ScrollView
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -101,55 +102,64 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        val navigation = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        navigation.addView(text("HOLA, JUAN", 23f, Color.WHITE, true))
-        navigation.addView(text("Tu Suzuki Jimny JB74", 12f, muted))
-        navigation.addView(text("NAVEGACIÓN", 12f, red, true))
-        navigation.addView(appCard("↗", "Google Maps", "Abrir navegación", "com.google.android.apps.maps", panel),
-            LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(10) })
-        navigation.addView(appCard("➤", "Waze", "Rutas y tráfico", "com.waze", panel),
-            LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(10) })
-        navigation.background = gradient(Color.rgb(189, 91, 23), Color.rgb(80, 37, 17))
-        navigation.setPadding(dp(14), dp(12), dp(14), dp(12))
-        body.addView(navigation, LinearLayout.LayoutParams(0, -1, 1.12f).apply { rightMargin = dp(12) })
-
-        val music = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(22), dp(16), dp(22), dp(16))
-            background = gradient(Color.rgb(215, 104, 26), Color.rgb(91, 35, 15))
-            isClickable = true
-            setOnClickListener { openApp("YouTube Music", "com.google.android.apps.youtube.music") }
-        }
-        music.addView(text("♫", 47f, red, true))
-        music.addView(text("TU MÚSICA", 11f, muted, true))
-        music.addView(text("YouTube Music", 24f, Color.WHITE, true))
-        music.addView(text("Tocá para abrir el reproductor  ↗", 12f, muted))
-        body.addView(music, LinearLayout.LayoutParams(0, -1, 1.12f).apply { rightMargin = dp(12) })
-
-        val info = LinearLayout(this).apply {
+        fun card(top: Int, bottom: Int) = gradient(top, bottom)
+        fun column(): LinearLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             setPadding(dp(14), dp(12), dp(14), dp(12))
-            background = gradient(Color.rgb(142, 63, 19), Color.rgb(53, 29, 20))
         }
-        info.addView(text("HORA LOCAL", 11f, muted, true))
-        val clock = text("", 37f, Color.WHITE, true)
-        clock.gravity = Gravity.CENTER
-        info.addView(clock)
-        val date = text("", 15f, muted)
-        date.gravity = Gravity.CENTER
-        info.addView(date)
-        info.addView(text("SUZUKI  •  JB74", 12f, red, true).apply {
-            gravity = Gravity.CENTER
-            setPadding(0, dp(15), 0, 0)
-        })
-        body.addView(info, LinearLayout.LayoutParams(0, -1, 0.95f))
+
+        val left = column().apply {
+            background = card(Color.rgb(232, 115, 21), Color.rgb(104, 43, 12))
+            addView(text("Hola, Juan", 28f, Color.WHITE, true))
+            addView(text("Bienvenido a tu Jimny", 13f, Color.WHITE))
+            addView(text("SUZUKI JIMNY JB74", 12f, muted, true))
+            addView(text("🚙", 75f).apply { gravity = Gravity.CENTER },
+                LinearLayout.LayoutParams(-1, 0, 1f))
+            addView(text("TU JIMNY BLANCO", 13f, Color.WHITE, true))
+            addView(text("Diseño naranja · Personalizado", 11f, muted))
+        }
+        body.addView(left, LinearLayout.LayoutParams(0, -1, 1.2f).apply { rightMargin = dp(10) })
+
+        val center = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val clockPanel = column().apply {
+            background = card(Color.rgb(93, 43, 19), Color.rgb(43, 24, 17))
+        }
+        val clock = text("", 36f, Color.WHITE, true).apply { gravity = Gravity.CENTER }
+        val date = text("", 12f, muted).apply { gravity = Gravity.CENTER }
+        clockPanel.addView(clock)
+        clockPanel.addView(date)
+        center.addView(clockPanel, LinearLayout.LayoutParams(-1, 0, 0.9f))
+        center.addView(appCard("↗", "Google Maps", "Abrir navegación", "com.google.android.apps.maps", Color.rgb(141, 65, 22)),
+            LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(8) })
+        center.addView(appCard("➤", "Waze", "Rutas y tráfico", "com.waze", Color.rgb(116, 49, 19)),
+            LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(8) })
+        body.addView(center, LinearLayout.LayoutParams(0, -1, 0.95f).apply { rightMargin = dp(10) })
+
+        val music = column().apply {
+            background = card(Color.rgb(197, 87, 18), Color.rgb(59, 28, 16))
+            isClickable = true
+            setOnClickListener { openApp("YouTube Music", "com.google.android.apps.youtube.music") }
+        }
+        music.addView(text("♫  YouTube Music", 21f, Color.WHITE, true))
+        music.addView(text("♪", 74f, red, true).apply { gravity = Gravity.CENTER },
+            LinearLayout.LayoutParams(-1, 0, 1f))
+        music.addView(text("TU MÚSICA", 16f, Color.WHITE, true))
+        music.addView(text("Abrir YouTube Music  ↗", 13f, muted))
+        music.addView(text("La canción y los controles se integrarán después", 10f, muted))
+        body.addView(music, LinearLayout.LayoutParams(0, -1, 1.1f))
         root.addView(body, LinearLayout.LayoutParams(-1, 0, 1f))
 
-        val footer = text("JIMNY LAUNCHER  /  V0.3      •      Usar aplicaciones de video solo estacionado", 10f, muted)
-        footer.gravity = Gravity.CENTER
-        root.addView(footer, LinearLayout.LayoutParams(-1, dp(34)))
+        val footer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+        footer.addView(text("⌖  NAVEGACIÓN", 12f, muted))
+        footer.addView(text("      •      ", 12f, red))
+        footer.addView(text("♫  MÚSICA", 12f, muted))
+        footer.addView(text("      •      ", 12f, red))
+        footer.addView(text("JIMNY LAUNCHER V0.4", 12f, muted))
+        root.addView(footer, LinearLayout.LayoutParams(-1, dp(36)))
 
         val container = FrameLayout(this)
         container.addView(root, FrameLayout.LayoutParams(-1, -1))
