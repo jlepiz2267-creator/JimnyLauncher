@@ -11,9 +11,16 @@ const workflow = fs.readFileSync(path.join(base,".github/workflows/android.yml")
 test("la interfaz naranja y bienvenida originales siguen presentes",()=>{
  for (const value of [
   "BIENVENIDO, JUAN","Hola, Juan","JIMNY  /  DRIVE","SUZUKI JIMNY JB74",
-  "TU JIMNY ORIGINAL","R.drawable.jimny_white","YouTube Music","Google Maps","Waze",
+  "TU JIMNY ORIGINAL","R.drawable.jimny_original","YouTube Music","Google Maps","Waze",
   "JIMNY LAUNCHER V0.8.1"
  ]) assert.ok(ui.includes(value), `Falta ${value}`);
+});
+test("la imagen original real está integrada en el APK y es WebP válida",()=>{
+ const image = fs.readFileSync(path.join(base,"app/src/main/res/drawable-nodpi/jimny_original.webp"));
+ assert.ok(image.length > 3500);
+ assert.equal(image.toString("ascii",0,4),"RIFF");
+ assert.equal(image.toString("ascii",8,12),"WEBP");
+ assert.match(ui,/setImageResource\(R\.drawable\.jimny_original\)/);
 });
 test("la pantalla inicial es el dashboard completo y no el mapa simplificado",()=>{
  assert.match(ui,/root\.addView\(body, LinearLayout\.LayoutParams\(-1, 0, 1f\)\)/);
