@@ -94,17 +94,7 @@ jobs:
           profile: pixel_2
           emulator-options: -no-snapshot -no-window -no-audio -gpu swiftshader_indirect -no-boot-anim
           disable-animations: true
-          script: |
-            set -e
-            APK="$(find app-distribucion -name app-debug.apk -print -quit)"
-            test -s "$APK"
-            adb install -r "$APK"
-            adb shell am start -W -n com.jimny.launcher/.MainActivity | tee arranque-android.txt
-            sleep 5
-            adb shell pidof com.jimny.launcher | tee -a arranque-android.txt
-            adb shell dumpsys activity activities | grep 'com.jimny.launcher' | head -10 | tee -a arranque-android.txt
-            adb exec-out screencap -p > captura-emulador.png
-            test -s captura-emulador.png
+          script: bash scripts/emulator-smoke.sh
       - name: Publicar evidencia del emulador
         if: always()
         uses: actions/upload-artifact@v4
