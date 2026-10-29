@@ -232,13 +232,13 @@ class MainActivity : Activity() {
         val clockPanel = column().apply {
             background = card(Color.rgb(93, 43, 19), Color.rgb(43, 24, 17))
         }
-        val clock = text("", 36f, Color.WHITE, true).apply { gravity = Gravity.CENTER }
-        val date = text("", 12f, muted).apply { gravity = Gravity.CENTER }
+        val clock = text("", 29f, Color.WHITE, true).apply { gravity = Gravity.CENTER }
+        val date = text("", 10f, muted).apply { gravity = Gravity.CENTER }
         clockPanel.addView(clock)
         clockPanel.addView(date)
-        center.addView(clockPanel, LinearLayout.LayoutParams(-1, 0, 0.9f))
+        center.addView(clockPanel, LinearLayout.LayoutParams(-1, 0, 1.15f))
         center.addView(appCard("↗", "Google Maps", "Abrir navegación", "com.google.android.apps.maps", Color.rgb(141, 65, 22)),
-            LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(8) })
+            LinearLayout.LayoutParams(-1, 0, 0.95f).apply { topMargin = dp(8) })
         center.addView(appCard("➤", "Waze", "Rutas y tráfico", "com.waze", Color.rgb(116, 49, 19)),
             LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(8) })
         body.addView(center, LinearLayout.LayoutParams(0, -1, 0.95f).apply { rightMargin = dp(10) })
