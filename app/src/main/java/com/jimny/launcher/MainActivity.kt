@@ -6,6 +6,8 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.FrameLayout
 import android.content.Intent
+import android.net.Uri
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -31,6 +33,61 @@ class MainActivity : Activity() {
     private var mapView: WebView? = null
     private var mapPage: LinearLayout? = null
     private var dashboard: LinearLayout? = null
+    private var carImage: ImageView? = null
+    private val carImagePrefs by lazy { getSharedPreferences("jimny_display", MODE_PRIVATE) }
+    private val photoRequestCode = 451
+
+    private fun chooseOriginalCarPhoto() {
+        val picker = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "image/*"
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+        }
+        try {
+            startActivityForResult(picker, photoRequestCode)
+        } catch (e: Exception) {
+            Toast.makeText(this, "No fue posible abrir la galería", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun displayOriginalCarPhoto(uri: Uri): Boolean {
+        return try {
+            val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, opts) }
+            if (opts.outWidth <= 0 || opts.outHeight <= 0) return false
+            var sampleSize = 1
+            while (opts.outWidth / sampleSize > 1600 || opts.outHeight / sampleSize > 1200) {
+                sampleSize *= 2
+            }
+            val loadOpts = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+            val bitmap = contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, loadOpts)
+            } ?: return false
+            carImage?.setImageBitmap(bitmap)
+            carImage?.contentDescription = "Fotografía original del Suzuki Jimny elegida por el usuario"
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != photoRequestCode || resultCode != RESULT_OK) return
+        val uri = data?.data ?: return
+        if (!displayOriginalCarPhoto(uri)) {
+            Toast.makeText(this, "No se pudo leer la foto. Probá con JPG o PNG.", Toast.LENGTH_LONG).show()
+            return
+        }
+        try {
+            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        } catch (_: SecurityException) {
+            Toast.makeText(this, "La foto podría requerir seleccionarse otra vez", Toast.LENGTH_SHORT).show()
+        }
+        carImagePrefs.edit().putString("chosen_original_car_uri", uri.toString()).apply()
+    }
+
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
@@ -147,13 +204,27 @@ class MainActivity : Activity() {
             addView(text("Hola, Juan", 28f, Color.WHITE, true))
             addView(text("Bienvenido a tu Jimny", 13f, Color.WHITE))
             addView(text("SUZUKI JIMNY JB74", 12f, muted, true))
-            addView(ImageView(this@MainActivity).apply {
+            val photoView = ImageView(this@MainActivity).apply {
                 setImageResource(R.drawable.jimny_white)
                 scaleType = ImageView.ScaleType.FIT_CENTER
-                contentDescription = "Ilustración de Suzuki Jimny blanco con franjas laterales"
-            }, LinearLayout.LayoutParams(-1, 0, 1f))
-            addView(text("TU JIMNY BLANCO", 13f, Color.WHITE, true))
-            addView(text("Diseño naranja · Personalizado", 11f, muted))
+                adjustViewBounds = true
+                contentDescription = "Suzuki Jimny blanco; podés elegir la foto original"
+            }
+            carImage = photoView
+            addView(photoView, LinearLayout.LayoutParams(-1, 0, 1f))
+            val saved = carImagePrefs.getString("chosen_original_car_uri", null)
+            if (saved != null && !displayOriginalCarPhoto(Uri.parse(saved))) {
+                carImagePrefs.edit().remove("chosen_original_car_uri").apply()
+            }
+            addView(text("TU JIMNY ORIGINAL", 13f, Color.WHITE, true))
+            addView(text("▣  ELEGIR FOTO DE MI JIMNY", 12f, Color.WHITE, true).apply {
+                setPadding(dp(8), dp(10), dp(8), dp(10))
+                background = rounded(Color.rgb(100, 46, 19), 10)
+                isClickable = true
+                contentDescription = "Elegir fotografía original del Jimny desde archivos"
+                setOnClickListener { chooseOriginalCarPhoto() }
+            })
+            addView(text("Foto privada en tu teléfono · sin acceso general a galería", 10f, muted))
         }
         body.addView(left, LinearLayout.LayoutParams(0, -1, 1.2f).apply { rightMargin = dp(10) })
 
@@ -238,7 +309,7 @@ class MainActivity : Activity() {
         footer.addView(text("      •      ", 12f, orange))
         footer.addView(text("♫  MÚSICA", 12f, muted))
         footer.addView(text("      •      ", 12f, orange))
-        footer.addView(text("JIMNY LAUNCHER V0.8", 12f, muted))
+        footer.addView(text("JIMNY LAUNCHER V0.8.1", 12f, muted))
         root.addView(footer, LinearLayout.LayoutParams(-1, dp(36)))
 
         val container = FrameLayout(this)
