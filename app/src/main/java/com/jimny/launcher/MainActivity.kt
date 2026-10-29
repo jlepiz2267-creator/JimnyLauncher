@@ -16,6 +16,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.ScrollView
+import android.widget.ImageView
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -114,8 +115,11 @@ class MainActivity : Activity() {
             addView(text("Hola, Juan", 28f, Color.WHITE, true))
             addView(text("Bienvenido a tu Jimny", 13f, Color.WHITE))
             addView(text("SUZUKI JIMNY JB74", 12f, muted, true))
-            addView(text("🚙", 75f).apply { gravity = Gravity.CENTER },
-                LinearLayout.LayoutParams(-1, 0, 1f))
+            addView(ImageView(this@MainActivity).apply {
+                setImageResource(R.drawable.jimny_white)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                contentDescription = "Ilustración de Suzuki Jimny blanco con franjas laterales"
+            }, LinearLayout.LayoutParams(-1, 0, 1f))
             addView(text("TU JIMNY BLANCO", 13f, Color.WHITE, true))
             addView(text("Diseño naranja · Personalizado", 11f, muted))
         }
