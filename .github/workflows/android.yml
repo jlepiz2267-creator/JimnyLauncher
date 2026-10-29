@@ -40,6 +40,17 @@ jobs:
           gradle-version: '8.9'
       - name: Compilación, pruebas unitarias y análisis estático
         run: gradle :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --stacktrace
+      - name: Rechazar accesos sensibles que bloquea Play Protect
+        shell: bash
+        run: |
+          set -euo pipefail
+          MANIFEST=app/src/main/AndroidManifest.xml
+          if grep -Eiq 'NotificationListenerService|BIND_NOTIFICATION_LISTENER_SERVICE|READ_SMS|RECEIVE_SMS|BIND_ACCESSIBILITY_SERVICE' "$MANIFEST"; then
+            echo "::error::Se detectó acceso sensible en el manifiesto."
+            exit 1
+          fi
+          test ! -e app/src/main/java/com/jimny/launcher/MusicListener.kt
+          echo "OK: sin listeners de notificaciones, SMS ni accesibilidad"
       - name: Auditar integridad, firma y permisos
         shell: bash
         run: |
@@ -60,13 +71,17 @@ jobs:
             "$TOOLS/aapt" dump permissions "$APK"
           } | tee apk-verificacion.txt
           if "$TOOLS/aapt" dump permissions "$APK" | grep -E "uses-permission:" | grep -v "name='android.permission.INTERNET'"; then
-            echo "ERROR: Se detectaron permisos nuevos."
+            echo "ERROR: Se detectaron permisos no autorizados."
+            exit 1
+          fi
+          if "$TOOLS/aapt" dump xmltree "$APK" AndroidManifest.xml | grep -Ei 'NotificationListenerService|BIND_NOTIFICATION_LISTENER_SERVICE|READ_SMS|RECEIVE_SMS|ACCESSIBILITY_SERVICE'; then
+            echo "ERROR: El APK contiene un servicio sensible."
             exit 1
           fi
       - name: Publicar APK y análisis
         uses: actions/upload-artifact@v4
         with:
-          name: JimnyLauncher-v06-APK
+          name: JimnyLauncher-v07-APK
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             apk-verificacion.txt
@@ -83,7 +98,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: JimnyLauncher-v06-APK
+          name: JimnyLauncher-v07-APK
           path: app-distribucion
       - name: Preparar aceleración del emulador (si está disponible)
         shell: bash
@@ -108,7 +123,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: JimnyLauncher-v06-emulador
+          name: JimnyLauncher-v07-emulador
           path: |
             arranque-android.txt
             captura-emulador.png
