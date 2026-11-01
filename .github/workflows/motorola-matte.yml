@@ -46,6 +46,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MatteLauncher-debug-apk
-          path: MotorolaMatte/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            MotorolaMatte/app/build/outputs/apk/full/debug/app-full-debug.apk
+            MotorolaMatte/app/build/outputs/apk/lite/debug/app-lite-debug.apk
           if-no-files-found: error
           retention-days: 30
