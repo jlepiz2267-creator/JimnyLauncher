@@ -3,16 +3,13 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Permite consultar los iconos de las aplicaciones de mensajes. -->
+    <!-- Visibilidad limitada a iconos de apps y a las tres apps de mensajes. -->
     <queries>
         <package android:name="com.whatsapp" />
         <package android:name="com.whatsapp.w4b" />
         <package android:name="com.microsoft.teams" />
         <package android:name="com.microsoft.teams2" />
         <package android:name="com.microsoft.office.outlook" />
-    </queries>
-    <!-- Permite enumerar solamente las actividades que aparecen como apps. -->
-    <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
