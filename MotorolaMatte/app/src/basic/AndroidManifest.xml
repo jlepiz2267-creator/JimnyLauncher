@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Only the local HOME/LAUNCHER application remains in this edition.
+         No INTERNET, LOCATION, POST_NOTIFICATIONS or notification listener. -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" tools:node="remove" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" tools:node="remove" />
+    <application>
+        <service android:name="cr.jlepiz.mattelauncher.NotificationFeed" tools:node="remove" />
+        <service android:name="cr.jlepiz.mattelauncher.WeatherJobService" tools:node="remove" />
+    </application>
+</manifest>
