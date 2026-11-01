@@ -54,10 +54,10 @@ import java.util.Set;
  * las aplicaciones seleccionadas explícitamente por la persona usuaria.
  */
 public final class MainActivity extends Activity {
-    private static final int BLACK = Color.rgb(16, 16, 16);
+    private static final int BLACK = Color.rgb(10, 10, 10);
     private static final int WHITE = Color.rgb(250, 250, 250);
     private static final int MUTED = Color.rgb(156, 156, 156);
-    private static final int BORDER = Color.rgb(51, 51, 51);
+    private static final int BORDER = Color.rgb(39, 39, 39);
     private static final String PREFS = "matte_preferences";
     private static final String KEY_SELECTION = "selected_packages_v1";
     private boolean editing = false;
@@ -311,31 +311,42 @@ public final class MainActivity extends Activity {
         TextView battery = text(percent < 0 ? "" : percent + "%", 13, MUTED, light());
         top.addView(battery, lp(-2, 30));
         r.addView(top, lp(-1, 36));
-        gap(r, 18);
+        gap(r, 16);
+
+        TextClock weekday = new TextClock(this);
+        weekday.setFormat12Hour("EEEE");
+        weekday.setFormat24Hour("EEEE");
+        weekday.setTextColor(WHITE);
+        weekday.setTextSize(36);
+        weekday.setTypeface(medium());
+        weekday.setAllCaps(true);
+        weekday.setSingleLine(true);
+        weekday.setIncludeFontPadding(false);
+        r.addView(weekday, lp(-1, 50));
 
         TextClock clock = new TextClock(this);
         clock.setFormat12Hour("hh:mm");
         clock.setFormat24Hour("HH:mm");
         clock.setTextColor(WHITE);
-        clock.setTextSize(70);
+        clock.setTextSize(52);
         clock.setTypeface(light());
         clock.setIncludeFontPadding(false);
         clock.setSingleLine(true);
-        r.addView(clock, lp(-1, 82));
+        r.addView(clock, lp(-1, 66));
 
         TextClock date = new TextClock(this);
-        date.setFormat12Hour("EEEE, d 'de' MMMM");
-        date.setFormat24Hour("EEEE, d 'de' MMMM");
+        date.setFormat12Hour("d 'de' MMMM");
+        date.setFormat24Hour("d 'de' MMMM");
         date.setTextColor(MUTED);
-        date.setTextSize(17);
+        date.setTextSize(14);
         date.setTypeface(light());
         date.setAllCaps(false);
-        r.addView(date, lp(-1, 35));
-        gap(r, 16);
+        r.addView(date, lp(-1, 27));
+        gap(r, 12);
         addWeatherPanel(r);
-        gap(r, 16);
+        gap(r, 14);
         divider(r);
-        gap(r, 16);
+        gap(r, 13);
 
         List<AppEntry> all = installedApps();
         Set<String> saved = selectedPackages();
@@ -351,9 +362,9 @@ public final class MainActivity extends Activity {
         previewContainer=vertical();
         list.addView(previewContainer, lp(-1,-2));
         refreshPreviews();
-        gap(list, 18);
+        gap(list, 14);
         divider(list);
-        gap(list, 12);
+        gap(list, 10);
         LinearLayout heading = horizontal();
         TextView title = text("MIS APLICACIONES", 12, WHITE, medium());
         title.setLetterSpacing(0.14f);
@@ -377,14 +388,13 @@ public final class MainActivity extends Activity {
                 row.setFocusable(true);
                 row.setOnClickListener(v -> launch(entry));
                 ImageView appIcon = appIcon(entry.packageName);
-                row.addView(appIcon, lp(42, 42));
-                TextView name = text(entry.label, 16, WHITE, light());
-                LinearLayout.LayoutParams nameLp = new LinearLayout.LayoutParams(0, dp(62), 1);
+                row.addView(appIcon, lp(36, 36));
+                TextView name = text(entry.label, 15, WHITE, light());
+                LinearLayout.LayoutParams nameLp = new LinearLayout.LayoutParams(0, dp(48), 1);
                 nameLp.leftMargin = dp(15);
                 row.addView(name, nameLp);
-                row.addView(text("›", 25, MUTED, light()), lp(15, 62));
-                list.addView(row, lp(-1, 66));
-                divider(list);
+                row.addView(text("›", 20, MUTED, light()), lp(15, 48));
+                list.addView(row, lp(-1, 52));
             }
         }
         scroll.addView(list);
@@ -403,7 +413,10 @@ public final class MainActivity extends Activity {
     private ImageView appIcon(String packageName) {
         ImageView icon = new ImageView(this);
         icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        icon.setPadding(dp(5),dp(5),dp(5),dp(5));
+        icon.setPadding(dp(4),dp(4),dp(4),dp(4));
+        android.graphics.ColorMatrix grayscale = new android.graphics.ColorMatrix();
+        grayscale.setSaturation(0f);
+        icon.setColorFilter(new android.graphics.ColorMatrixColorFilter(grayscale));
         icon.setBackground(outline(12));
         try { icon.setImageDrawable(getPackageManager().getApplicationIcon(packageName)); }
         catch (PackageManager.NameNotFoundException ignored) {
@@ -549,6 +562,11 @@ public final class MainActivity extends Activity {
 
     void refreshPreviews() {
         if (editing || previewContainer==null) return;
+        if (!BuildConfig.MESSAGE_PREVIEWS) {
+            previewContainer.removeAllViews();
+            previewContainer.addView(text("Vista Lite: sin acceso a tus mensajes.",12,MUTED,light()),lp(-1,34));
+            return;
+        }
         previewContainer.removeAllViews();
         if (!NotificationFeed.accessGranted(this)) {
             TextView grant=action("ACTIVAR ACCESO A NOTIFICACIONES",()->{
