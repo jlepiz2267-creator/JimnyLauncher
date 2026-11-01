@@ -10,8 +10,8 @@ android {
         applicationId 'cr.jlepiz.mattelauncher'
         minSdk 26
         targetSdk 35
-        versionCode 3
-        versionName '0.3.0'
+        versionCode 4
+        versionName '0.4.0'
     }
     buildFeatures {
         buildConfig true
@@ -22,12 +22,21 @@ android {
             dimension 'edition'
             manifestPlaceholders = [launcherLabel: 'Matte Launcher']
             buildConfigField 'boolean', 'MESSAGE_PREVIEWS', 'true'
+            buildConfigField 'boolean', 'WEATHER_ENABLED', 'true'
         }
         lite {
             dimension 'edition'
             applicationIdSuffix '.lite'
             manifestPlaceholders = [launcherLabel: 'Matte Launcher Lite']
             buildConfigField 'boolean', 'MESSAGE_PREVIEWS', 'false'
+            buildConfigField 'boolean', 'WEATHER_ENABLED', 'true'
+        }
+        basic {
+            dimension 'edition'
+            applicationIdSuffix '.basic'
+            manifestPlaceholders = [launcherLabel: 'Matte Launcher Básico']
+            buildConfigField 'boolean', 'MESSAGE_PREVIEWS', 'false'
+            buildConfigField 'boolean', 'WEATHER_ENABLED', 'false'
         }
     }
     compileOptions {
