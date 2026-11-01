@@ -343,7 +343,7 @@ public final class MainActivity extends Activity {
         date.setAllCaps(false);
         r.addView(date, lp(-1, 27));
         gap(r, 12);
-        addWeatherPanel(r);
+        if (BuildConfig.WEATHER_ENABLED) addWeatherPanel(r);
         gap(r, 14);
         divider(r);
         gap(r, 13);
@@ -356,15 +356,19 @@ public final class MainActivity extends Activity {
         scroll.setFillViewport(true);
         scroll.setVerticalScrollBarEnabled(false);
         LinearLayout list = vertical();
-        TextView noticeTitle = text("VISTAS PREVIAS", 12, WHITE, medium());
-        noticeTitle.setLetterSpacing(0.14f);
-        list.addView(noticeTitle, lp(-1, 30));
-        previewContainer=vertical();
-        list.addView(previewContainer, lp(-1,-2));
-        refreshPreviews();
-        gap(list, 14);
-        divider(list);
-        gap(list, 10);
+        if (BuildConfig.WEATHER_ENABLED || BuildConfig.MESSAGE_PREVIEWS) {
+            TextView noticeTitle = text("VISTAS PREVIAS", 12, WHITE, medium());
+            noticeTitle.setLetterSpacing(0.14f);
+            list.addView(noticeTitle, lp(-1, 30));
+            previewContainer=vertical();
+            list.addView(previewContainer, lp(-1,-2));
+            refreshPreviews();
+            gap(list, 14);
+            divider(list);
+            gap(list, 10);
+        } else {
+            previewContainer=null;
+        }
         LinearLayout heading = horizontal();
         TextView title = text("MIS APLICACIONES", 12, WHITE, medium());
         title.setLetterSpacing(0.14f);
