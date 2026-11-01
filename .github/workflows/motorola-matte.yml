@@ -41,13 +41,40 @@ jobs:
       - name: Compilar Matte Launcher
         working-directory: MotorolaMatte
         run: gradle :app:assembleDebug --no-daemon --stacktrace
-      - name: Subir APK instalable
+      - name: Comprobar permisos reales de APK por edición
+        shell: bash
+        run: |
+          set -euo pipefail
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          FULL="MotorolaMatte/app/build/outputs/apk/full/debug/app-full-debug.apk"
+          LITE="MotorolaMatte/app/build/outputs/apk/lite/debug/app-lite-debug.apk"
+          BASIC="MotorolaMatte/app/build/outputs/apk/basic/debug/app-basic-debug.apk"
+          for apk in "$FULL" "$LITE" "$BASIC"; do
+            test -s "$apk" || { echo "ERROR: missing $apk"; exit 1; }
+            "$AAPT" dump badging "$apk" | head -n 4
+          done
+          "$AAPT" dump xmltree "$BASIC" AndroidManifest.xml > /tmp/matte-basic-manifest.txt
+          "$AAPT" dump xmltree "$LITE" AndroidManifest.xml > /tmp/matte-lite-manifest.txt
+          "$AAPT" dump xmltree "$FULL" AndroidManifest.xml > /tmp/matte-full-manifest.txt
+          if grep -Eq 'E: uses-permission|E: uses-permission-sdk-' /tmp/matte-basic-manifest.txt; then
+            echo 'ERROR: Basic edition must declare zero Android permissions'
+            exit 1
+          fi
+          if grep -q 'NotificationFeed' /tmp/matte-lite-manifest.txt || grep -q 'NotificationFeed' /tmp/matte-basic-manifest.txt; then
+            echo 'ERROR: restricted notification listener found in Lite or Basic manifest'
+            exit 1
+          fi
+          grep -q 'NotificationFeed' /tmp/matte-full-manifest.txt
+          grep -q 'WeatherJobService' /tmp/matte-full-manifest.txt
+          echo 'PASS: Basic has no permissions or restricted listener; Lite has no listener.'
+      - name: Subir APKs de prueba
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: MatteLauncher-debug-apk
+          name: MatteLauncher-v0.4-APKs-debug
           path: |
             MotorolaMatte/app/build/outputs/apk/full/debug/app-full-debug.apk
             MotorolaMatte/app/build/outputs/apk/lite/debug/app-lite-debug.apk
+            MotorolaMatte/app/build/outputs/apk/basic/debug/app-basic-debug.apk
           if-no-files-found: error
           retention-days: 30
