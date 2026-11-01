@@ -1,6 +1,10 @@
 package cr.jlepiz.mattelauncher;
 
 import android.app.Activity;
+import android.Manifest;
+import android.location.Location;
+import android.location.LocationManager;
+import android.widget.ImageView;
 import android.app.role.RoleManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -57,6 +61,11 @@ public final class MainActivity extends Activity {
     private static final String PREFS = "matte_preferences";
     private static final String KEY_SELECTION = "selected_packages_v1";
     private boolean editing = false;
+    private boolean weatherLoading = false;
+    private TextView weatherCurrent, weatherDetails;
+    private LinearLayout previewContainer;
+    private static final int REQUEST_LOCATION=74;
+    private static final int REQUEST_WEATHER_NOTIFICATIONS=75;
 
     private static final class AppEntry {
         final String packageName;
@@ -88,7 +97,28 @@ public final class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        NotificationFeed.attach(this);
+        WeatherJobService.schedule(this);
         if (!editing) renderHome();
+    }
+
+    @Override protected void onDestroy() {
+        NotificationFeed.detach(this);
+        super.onDestroy();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode==REQUEST_LOCATION && hasWeatherLocationPermission()) loadWeather(true);
+        if (requestCode==REQUEST_WEATHER_NOTIFICATIONS) {
+            if (results.length>0 && results[0]==PackageManager.PERMISSION_GRANTED) {
+                WeatherJobService.schedule(this);
+                WeatherData.Report saved=WeatherData.saved(this);
+                if (saved!=null) WeatherData.notifyWeather(this,saved);
+            } else WeatherData.setAlerts(this,false);
+            if (!editing) renderHome();
+        }
     }
 
     @Override
@@ -281,17 +311,17 @@ public final class MainActivity extends Activity {
         TextView battery = text(percent < 0 ? "" : percent + "%", 13, MUTED, light());
         top.addView(battery, lp(-2, 30));
         r.addView(top, lp(-1, 36));
-        gap(r, 33);
+        gap(r, 18);
 
         TextClock clock = new TextClock(this);
         clock.setFormat12Hour("hh:mm");
         clock.setFormat24Hour("HH:mm");
         clock.setTextColor(WHITE);
-        clock.setTextSize(76);
+        clock.setTextSize(70);
         clock.setTypeface(light());
         clock.setIncludeFontPadding(false);
         clock.setSingleLine(true);
-        r.addView(clock, lp(-1, 94));
+        r.addView(clock, lp(-1, 82));
 
         TextClock date = new TextClock(this);
         date.setFormat12Hour("EEEE, d 'de' MMMM");
@@ -301,26 +331,36 @@ public final class MainActivity extends Activity {
         date.setTypeface(light());
         date.setAllCaps(false);
         r.addView(date, lp(-1, 35));
-        gap(r, 43);
+        gap(r, 16);
+        addWeatherPanel(r);
+        gap(r, 16);
         divider(r);
-        gap(r, 24);
+        gap(r, 16);
 
         List<AppEntry> all = installedApps();
         Set<String> saved = selectedPackages();
         List<AppEntry> visible = new ArrayList<>();
         for (AppEntry a : all) if (saved.contains(a.packageName)) visible.add(a);
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setVerticalScrollBarEnabled(false);
+        LinearLayout list = vertical();
+        TextView noticeTitle = text("VISTAS PREVIAS", 12, WHITE, medium());
+        noticeTitle.setLetterSpacing(0.14f);
+        list.addView(noticeTitle, lp(-1, 30));
+        previewContainer=vertical();
+        list.addView(previewContainer, lp(-1,-2));
+        refreshPreviews();
+        gap(list, 18);
+        divider(list);
+        gap(list, 12);
         LinearLayout heading = horizontal();
         TextView title = text("MIS APLICACIONES", 12, WHITE, medium());
         title.setLetterSpacing(0.14f);
         heading.addView(title, new LinearLayout.LayoutParams(0, dp(28), 1));
         heading.addView(text(String.valueOf(visible.size()), 13, MUTED, light()), lp(-2, 28));
-        r.addView(heading, lp(-1, 30));
-        gap(r, 8);
-
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(true);
-        scroll.setVerticalScrollBarEnabled(false);
-        LinearLayout list = vertical();
+        list.addView(heading, lp(-1, 30));
+        gap(list, 8);
         if (visible.isEmpty()) {
             gap(list, 42);
             TextView none = text("Todavía no elegiste aplicaciones.", 16, MUTED, light());
@@ -336,10 +376,8 @@ public final class MainActivity extends Activity {
                 row.setClickable(true);
                 row.setFocusable(true);
                 row.setOnClickListener(v -> launch(entry));
-                TextView monogram = text(firstLetter(entry.label), 17, WHITE, light());
-                monogram.setGravity(Gravity.CENTER);
-                ripple(monogram, outline(12));
-                row.addView(monogram, lp(42, 42));
+                ImageView appIcon = appIcon(entry.packageName);
+                row.addView(appIcon, lp(42, 42));
                 TextView name = text(entry.label, 16, WHITE, light());
                 LinearLayout.LayoutParams nameLp = new LinearLayout.LayoutParams(0, dp(62), 1);
                 nameLp.leftMargin = dp(15);
@@ -359,6 +397,205 @@ public final class MainActivity extends Activity {
             TextView setHome = action("PONER COMO INICIO", this::requestDefaultHome);
             r.addView(setHome, lp(-1, 48));
         }
+    }
+
+
+    private ImageView appIcon(String packageName) {
+        ImageView icon = new ImageView(this);
+        icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        icon.setPadding(dp(5),dp(5),dp(5),dp(5));
+        icon.setBackground(outline(12));
+        try { icon.setImageDrawable(getPackageManager().getApplicationIcon(packageName)); }
+        catch (PackageManager.NameNotFoundException ignored) {
+            icon.setImageResource(android.R.drawable.sym_def_app_icon);
+        }
+        icon.setContentDescription("Icono de "+packageName);
+        return icon;
+    }
+
+    private boolean hasWeatherLocationPermission() {
+        return checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)==PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void addWeatherPanel(LinearLayout root) {
+        LinearLayout panel=vertical();
+        panel.setPadding(dp(13),dp(10),dp(13),dp(10));
+        panel.setBackground(outline(12));
+        LinearLayout first=horizontal();
+        weatherCurrent=text("CLIMA  ·  SIN UBICACIÓN",15,WHITE,medium());
+        first.addView(weatherCurrent,new LinearLayout.LayoutParams(0,dp(29),1));
+        TextView update=text("↻",23,MUTED,light());
+        update.setGravity(Gravity.CENTER);
+        update.setContentDescription("Actualizar clima");
+        update.setOnClickListener(v -> loadWeather(true));
+        first.addView(update,lp(36,32));
+        panel.addView(first,lp(-1,32));
+        weatherDetails=text("Tocá para activar el clima local",12,MUTED,light());
+        panel.addView(weatherDetails,lp(-1,23));
+        LinearLayout buttons=horizontal();
+        TextView loc=action(hasWeatherLocationPermission()?"ACTUALIZAR":"ACTIVAR CLIMA", ()->loadWeather(true));
+        LinearLayout.LayoutParams locLp=new LinearLayout.LayoutParams(0,dp(35),1);
+        locLp.rightMargin=dp(7);
+        buttons.addView(loc,locLp);
+        TextView alerts=action(WeatherData.alerts(this)?"AVISOS ACTIVADOS":"AVISOS DEL CLIMA",this::toggleWeatherAlerts);
+        buttons.addView(alerts,new LinearLayout.LayoutParams(0,dp(35),1));
+        panel.addView(buttons,lp(-1,35));
+        root.addView(panel,lp(-1,-2));
+        updateWeatherView();
+        if (hasWeatherLocationPermission()) loadWeather(false);
+    }
+
+    private void updateWeatherView() {
+        if (weatherCurrent==null || weatherDetails==null) return;
+        WeatherData.Report data=WeatherData.saved(this);
+        if (data!=null) {
+            weatherCurrent.setText(String.format(Locale.forLanguageTag("es-CR"),
+                "%s  ·  %.0f °C",data.description(),data.temperature));
+            String staleness=System.currentTimeMillis()-data.timestamp>2*60*60*1000L?" · sin actualizar":"";
+            weatherDetails.setText(String.format(Locale.forLanguageTag("es-CR"),
+                "Sensación térmica %.0f °C%s",data.apparent,staleness));
+        } else {
+            weatherCurrent.setText("CLIMA");
+            weatherDetails.setText(hasWeatherLocationPermission()?"Obteniendo clima local…":"Activá la ubicación aproximada");
+        }
+    }
+
+    private void loadWeather(boolean force) {
+        if (weatherLoading) return;
+        if (!hasWeatherLocationPermission()) {
+            requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},REQUEST_LOCATION);
+            return;
+        }
+        android.content.SharedPreferences p=WeatherData.prefs(this);
+        long lastLocation=p.getLong("location_checked",0);
+        if (!WeatherData.hasCoords(this) || force ||
+            System.currentTimeMillis()-lastLocation > 60L*60*1000) {
+            LocationManager lm=(LocationManager)getSystemService(Context.LOCATION_SERVICE);
+            if (lm!=null) {
+                try {
+                    Location known=lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                    if (known==null) known=lm.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
+                    if (known!=null) {
+                        WeatherData.saveCoords(this,known.getLatitude(),known.getLongitude());
+                        p.edit().putLong("location_checked",System.currentTimeMillis()).apply();
+                    }
+                    if (!WeatherData.hasCoords(this)) {
+                        if (!lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                            if (force) Toast.makeText(this,"Activá la ubicación del teléfono",Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        lm.getCurrentLocation(LocationManager.NETWORK_PROVIDER,null,getMainExecutor(),location -> {
+                            if (location==null) {
+                                if (force) Toast.makeText(this,"Ubicación aún no disponible",Toast.LENGTH_LONG).show();
+                                return;
+                            }
+                            WeatherData.saveCoords(this,location.getLatitude(),location.getLongitude());
+                            p.edit().putLong("location_checked",System.currentTimeMillis()).apply();
+                            WeatherJobService.schedule(this);
+                            fetchWeather(force);
+                        });
+                        return;
+                    }
+                } catch (SecurityException ex) { return; }
+            }
+        }
+        fetchWeather(force);
+    }
+
+    private void fetchWeather(boolean force) {
+        WeatherData.Report existing=WeatherData.saved(this);
+        if (!force && existing!=null && System.currentTimeMillis()-existing.timestamp<WeatherData.REFRESH_MS) {
+            updateWeatherView(); return;
+        }
+        if (weatherLoading || !WeatherData.hasCoords(this)) return;
+        weatherLoading=true;
+        if (weatherDetails!=null) weatherDetails.setText("Actualizando condiciones…");
+        new Thread(() -> {
+            boolean success=true;
+            try { WeatherData.fetch(getApplicationContext(),false); }
+            catch (Exception ignored) { success=false; }
+            final boolean ok=success;
+            runOnUiThread(() -> {
+                weatherLoading=false;
+                if (!editing) updateWeatherView();
+                if (!ok && force) Toast.makeText(this,"Sin conexión con el servicio del clima",Toast.LENGTH_SHORT).show();
+            });
+        },"matte-weather-ui").start();
+    }
+
+    private void toggleWeatherAlerts() {
+        if (!hasWeatherLocationPermission()) {
+            Toast.makeText(this,"Activá primero el clima local",Toast.LENGTH_SHORT).show();
+            loadWeather(true);
+            return;
+        }
+        if (!WeatherData.hasCoords(this)) {
+            loadWeather(true);
+            Toast.makeText(this,"Esperá la ubicación y volvé a tocar avisos",Toast.LENGTH_LONG).show();
+            return;
+        }
+        boolean desired=!WeatherData.alerts(this);
+        WeatherData.setAlerts(this,desired);
+        WeatherJobService.schedule(this);
+        if (desired && Build.VERSION.SDK_INT>=33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},REQUEST_WEATHER_NOTIFICATIONS);
+        } else if (desired) {
+            WeatherData.Report report=WeatherData.saved(this);
+            if (report!=null) WeatherData.notifyWeather(this,report);
+        }
+        if (!editing) renderHome();
+    }
+
+    void refreshPreviews() {
+        if (editing || previewContainer==null) return;
+        previewContainer.removeAllViews();
+        if (!NotificationFeed.accessGranted(this)) {
+            TextView grant=action("ACTIVAR ACCESO A NOTIFICACIONES",()->{
+                Intent settings=new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
+                startActivity(settings);
+            });
+            previewContainer.addView(grant,lp(-1,49));
+            gap(previewContainer,7);
+            TextView note=text("Para Teams, WhatsApp y Outlook. Solo se leen avisos activos.",12,MUTED,light());
+            previewContainer.addView(note,lp(-1,38));
+            return;
+        }
+        addPreview("teams","Teams","com.microsoft.teams");
+        addPreview("whatsapp","WhatsApp","com.whatsapp");
+        addPreview("outlook","Outlook","com.microsoft.office.outlook");
+    }
+
+    private void addPreview(String group, String label, String packageName) {
+        NotificationFeed.Preview notification=NotificationFeed.latest(group);
+        LinearLayout row=horizontal();
+        row.addView(appIcon(packageName),lp(36,36));
+        LinearLayout texts=vertical();
+        TextView title=text(label+(notification==null?"":"  ·  "+notification.title),13,WHITE,medium());
+        title.setSingleLine(true);
+        title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        texts.addView(title,lp(-1,20));
+        TextView snippet=text(notification==null?"Sin avisos activos":notification.message,12,MUTED,light());
+        snippet.setSingleLine(true);
+        snippet.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        texts.addView(snippet,lp(-1,21));
+        LinearLayout.LayoutParams tLp=new LinearLayout.LayoutParams(0,dp(45),1);
+        tLp.leftMargin=dp(12);
+        row.addView(texts,tLp);
+        row.setContentDescription("Abrir "+label);
+        row.setClickable(true);
+        row.setOnClickListener(v -> {
+            if (notification!=null && notification.action!=null) {
+                try { notification.action.send(); return; }
+                catch (android.app.PendingIntent.CanceledException ignored) {}
+            }
+            Intent app=getPackageManager().getLaunchIntentForPackage(packageName);
+            if (app==null && group.equals("whatsapp"))
+                app=getPackageManager().getLaunchIntentForPackage("com.whatsapp.w4b");
+            if (app!=null) startActivity(app);
+        });
+        previewContainer.addView(row,lp(-1,52));
+        divider(previewContainer);
     }
 
     private String firstLetter(String label) {
@@ -414,6 +651,8 @@ public final class MainActivity extends Activity {
                 if (!app.label.toLowerCase(Locale.ROOT).contains(filter)
                     && !app.packageName.toLowerCase(Locale.ROOT).contains(filter)) continue;
                 found++;
+                LinearLayout selectRow = horizontal();
+                selectRow.addView(appIcon(app.packageName), lp(38,38));
                 CheckBox check = new CheckBox(this);
                 check.setText(app.label);
                 check.setTextColor(WHITE);
@@ -426,7 +665,10 @@ public final class MainActivity extends Activity {
                     if (checked) draft.add(app.packageName);
                     else draft.remove(app.packageName);
                 });
-                appRows.addView(check, lp(-1, 57));
+                LinearLayout.LayoutParams checkWidth = new LinearLayout.LayoutParams(0, dp(57), 1);
+                checkWidth.leftMargin=dp(10);
+                selectRow.addView(check, checkWidth);
+                appRows.addView(selectRow, lp(-1,57));
                 divider(appRows);
             }
             if (found == 0) {
