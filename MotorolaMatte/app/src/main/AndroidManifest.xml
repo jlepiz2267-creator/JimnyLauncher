@@ -20,8 +20,8 @@
     </queries>
 
     <application
-        android:allowBackup="true"
-        android:label="Matte Launcher"
+        android:allowBackup="false"
+        android:label="${launcherLabel}"
         android:icon="@drawable/ic_launcher"
         android:theme="@style/Theme.Matte"
         android:supportsRtl="true">
